@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "EasyAuthDevProxy": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "BACKEND": "https://localhost:7290"
+      },
+      "applicationUrl": "https://localhost:63063;http://localhost:63064"
+    }
+  }
+}

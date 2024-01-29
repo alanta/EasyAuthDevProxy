@@ -1,0 +1,45 @@
+﻿@page "/.auth/login/{idp}"
+@model EasyAuthDevProxy.Pages.IndexModel
+@{
+}
+
+<html>
+<head>
+    <!-- add page css -->
+    <link rel="stylesheet" href="/.auth/assets/easyauthdev.css" />
+</head>
+<body>
+<header>
+    <h1>EasyAuthDevProxy</h1>
+    <p>EasyAuthDevProxy is a simple proxy that allows you to test your EasyAuth protected APIs locally.</p>
+</header>
+<main>
+    <form method="post">
+        <div>
+            <label asp-for="Idp">Provider</label>
+            <input asp-for="Idp" disabled="" />
+            <p>Name of the identity provider</p>
+        </div>
+        <div>
+            <label asp-for="UserId">User ID</label>
+            <input asp-for="UserId" />
+            <span asp-validation-for="UserId" class="text-danger"></span>
+            <p>Unique ID of the user. If not provided, a random GUID will be generated.</p>
+        </div>
+        <div>
+            <label asp-for="UserName">Username</label>
+            <input asp-for="UserName"/>
+            <span asp-validation-for="UserName" class="text-danger"></span>
+            Username of the account to be logged in.
+        </div>
+        <div>
+            <label asp-for="Roles">Roles</label>
+            <textarea asp-fOr="Roles"></textarea>
+            <span asp-validation-for="Roles" class="text-danger"></span>
+            <p>One role per line. "authenticated" and "anonymous" will be added automatically, if not provided.</p>
+        </div>
+        <button type="submit">Login</button>
+    </form>
+    </main>
+</body>
+</html>
