@@ -31,13 +31,13 @@
             <label asp-for="UserName">Username</label>
             <input asp-for="UserName"/>
             <span asp-validation-for="UserName" class="text-danger"></span>
-            Username of the account to be logged in.
+                <p>Username of the account to be logged in.</p>
         </div>
         <div>
             <label asp-for="Roles">Roles</label>
             <textarea asp-fOr="Roles"></textarea>
             <span asp-validation-for="Roles" class="text-danger"></span>
-            <p>One role per line. "authenticated" and "anonymous" will be added automatically, if not provided.</p>
+            <p>One role per line.</p>
         </div>
         <button type="submit">Login</button>
     </form>

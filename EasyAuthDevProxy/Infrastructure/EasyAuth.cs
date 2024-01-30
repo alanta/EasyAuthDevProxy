@@ -29,7 +29,7 @@ public static class EasyAuth
         var json = System.Text.Json.JsonSerializer.Serialize(principal);
         return Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
     }
-    public static MsClientPrincipal Decode(string encoded)
+    public static MsClientPrincipal? Decode(string encoded)
     {
         var json = Encoding.UTF8.GetString(Convert.FromBase64String(encoded));
         var principal = System.Text.Json.JsonSerializer.Deserialize<MsClientPrincipal>(json);
@@ -41,15 +41,20 @@ public static class EasyAuth
         context.Response.Cookies.Delete(CookieName);
         context.Response.Redirect(context.Request.Headers.Referer.FirstOrDefault() ?? "/");
     }
-    public static async ValueTask EasyAuthTransform(RequestTransformContext transformContext)
+    public static ValueTask EasyAuthTransform(RequestTransformContext transformContext)
     {
         var cookie = transformContext.HttpContext.Request.Cookies[CookieName];
         if (cookie is null)
         {
-            return;
+            return ValueTask.CompletedTask;
         }
 
-        var principal = EasyAuth.Decode(cookie); // TODO: validate 
+        var principal = Decode(cookie); // TODO: validate 
+
+        if (principal is null)
+        {
+            return ValueTask.CompletedTask;
+        }
 
         transformContext.ProxyRequest.Headers.Add(Headers.ClientPrincipal, cookie);
         transformContext.ProxyRequest.Headers.Add(Headers.ClientPrincipalIdp, principal.AuthenticationType);
@@ -63,6 +68,8 @@ public static class EasyAuth
         {
             transformContext.ProxyRequest.Headers.Add(Headers.ClientPrincipalId, idClaim.Value);
         }
+
+        return ValueTask.CompletedTask;
     }
 }
 public class MsClientPrincipal

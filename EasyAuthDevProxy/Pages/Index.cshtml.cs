@@ -25,11 +25,11 @@ namespace EasyAuthDevProxy.Pages
             {
                 var principal = EasyAuth.Decode(cookieValue);
 
-                if (Idp == principal.AuthenticationType)
+                if (principal != null && Idp == principal.AuthenticationType)
                 {
                     Idp = principal.AuthenticationType;
                     UserName = principal.Claims.FirstOrDefault(c => c.Type == principal.NameType)?.Value ?? "";
-                    UserId = principal.Claims.FirstOrDefault(c => c.Type == EasyAuth.Claims.ObjectId)?.Value ?? Guid.NewGuid().ToString();
+                    UserId = principal.Claims.FirstOrDefault(c => c.Type == EasyAuth.Claims.ObjectId)?.Value;
                     Roles = string.Join("\n", principal.Claims.Where(r => r.Type == "roles").Select(r => r.Value));
                 }
             }
@@ -40,7 +40,6 @@ namespace EasyAuthDevProxy.Pages
             }
         }
         
-
         public IActionResult OnPost()
         {
             if (!ModelState.IsValid)
@@ -52,7 +51,7 @@ namespace EasyAuthDevProxy.Pages
                 AuthenticationType = Idp,
                 Claims = [
                     new UserClaim { Type = "name", Value = UserName! },
-                    .. Roles.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(r => new UserClaim { Type = "roles", Value = r }).ToArray(),
+                    .. Roles?.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(r => new UserClaim { Type = "roles", Value = r }).ToArray(),
                     new UserClaim { Type = EasyAuth.Claims.ObjectId, Value = UserId! },
                 ],
                 NameType = "name",
