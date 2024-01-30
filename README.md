@@ -4,7 +4,7 @@ Run your container app with EasyAuth enabled in local development.
 
 ## About this project
 
-This project was created to scratch an itch I wanted to run my [Azure Container App](https://learn.microsoft.com/en-us/azure/container-apps/overview) locally with [EasyAuth](https://learn.microsoft.com/en-us/azure/container-apps/authentication) enabled.
+This project was created to scratch an itch: I wanted to run my [Azure Container App](https://learn.microsoft.com/en-us/azure/container-apps/overview) locally with [EasyAuth](https://learn.microsoft.com/en-us/azure/container-apps/authentication) enabled.
 
 It's a [YARP](https://microsoft.github.io/reverse-proxy/) based reverse proxy that intercepts the EasyAuth endpoints to allows logging in locally.
 
