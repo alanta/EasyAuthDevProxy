@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34330.188
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyAuthDevProxy", "EasyAuthDevProxy\EasyAuthDevProxy.csproj", "{821A9795-D4E4-40D2-9730-B15DECE3CF4D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EasyAuthDevProxy", "EasyAuthDevProxy\EasyAuthDevProxy.csproj", "{821A9795-D4E4-40D2-9730-B15DECE3CF4D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DemoApp", "DemoApp\DemoApp.csproj", "{C7FDF515-91F7-4B92-A7D7-55FB55752823}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{821A9795-D4E4-40D2-9730-B15DECE3CF4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{821A9795-D4E4-40D2-9730-B15DECE3CF4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{821A9795-D4E4-40D2-9730-B15DECE3CF4D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7FDF515-91F7-4B92-A7D7-55FB55752823}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7FDF515-91F7-4B92-A7D7-55FB55752823}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7FDF515-91F7-4B92-A7D7-55FB55752823}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7FDF515-91F7-4B92-A7D7-55FB55752823}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

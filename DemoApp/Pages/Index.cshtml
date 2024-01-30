@@ -1,0 +1,38 @@
+﻿@page
+
+<!DOCTYPE html>
+<html lang="en">
+<html>
+<head>
+<link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+    <header>
+        <h1>Welcome</h1>
+        <p>This is a silly little demo app to demonstrate the Dev Proxy for EasyAuth in Container Apps.</p>
+    </header>
+    <main>
+
+    @if(User.Identity?.IsAuthenticated ?? false)
+    {
+        <p>You are logged in as <strong>@User.Identity.Name</strong>.</p>
+        <p>Your roles:</p>
+        <ul>
+            @foreach(var role in User.Claims.Where(c => c.Type == "roles"))
+            {
+                <li>@role.Value</li>
+            }
+        </ul>
+        <p>
+                <a href="/.auth/logout"><em>Logout</em></a>
+        </p>
+    }
+    else
+    {
+        <p>You are not logged in.</p>
+            <p><a href="/.auth/login/aad"><strong>login</strong></a></p>
+    }
+
+</main>
+</body>
+</html>
