@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      version: ${{ steps.gitversion.outputs.version }}
+      version: ${{ steps.gitversion.outputs.fullSemVer }}
 
     steps:
       - name: Checkout code
@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: determine-version
     env:
-      VERSION: ${{ needs.determine-version.outputs.GitVersion_FullSemVer }}
+      VERSION: ${{ needs.determine-version.outputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -63,7 +63,7 @@ jobs:
         contents: read
         packages: write
     env:
-        VERSION: ${{ needs.determine-version.outputs.GitVersion_FullSemVer }}
+        VERSION: ${{ needs.determine-version.outputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -72,5 +72,5 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build and Push Container image
-        run: dotnet publish EasyAuthDevProxy -t:PublishContainer -p ContainerRepository="${{ github.actor }}/easyauthdevproxy" -p ContainerImageTags="${{ needs.determine-version.outputs.GitVersion_FullSemVer }}" -p ContainerRegistry="ghcr.io"
+        run: dotnet publish EasyAuthDevProxy -t:PublishContainer -p ContainerRepository="${{ github.actor }}/easyauthdevproxy" -p ContainerImageTags="${{ needs.determine-version.outputs.version }}" -p ContainerRegistry="ghcr.io"
       
