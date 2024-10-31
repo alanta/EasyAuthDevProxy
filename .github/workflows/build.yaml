@@ -26,19 +26,17 @@ jobs:
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v3.0.0
         with:
-            versionSpec: '5.x'
-      - name: Use GitVersion
+          versionSpec: '6.x'
+
+      - name: Determine Version
         id: gitversion # step id used as reference for output values
         uses: gittools/actions/gitversion/execute@v3.0.0
       
-      - name: Set output variable
-        run: echo "##[set-output name=Version;]${{ steps.gitversion.outputs.FullSemVer }}" 
-
   build:
     runs-on: ubuntu-latest
     needs: determine-version
     env:
-      VERSION: ${{ needs.determine-version.outputs.Version }}
+      VERSION: ${{ needs.determine-version.outputs.GitVersion_FullSemVer }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -61,7 +59,8 @@ jobs:
     #if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     needs: [determine-version, build]
-
+    env:
+        VERSION: ${{ needs.determine-version.outputs.GitVersion_FullSemVer }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -69,8 +68,6 @@ jobs:
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Build Docker image
-        run: docker build -t ghcr.io/${{ github.repository }}/easyauthdevproxy:${{ needs.determine-version.outputs.Version }} ./EasyAuthDevProxy
-
-      - name: Push Docker image
-        run: docker push ghcr.io/${{ github.repository }}/easyauthdevproxy:${{ needs.determine-version.outputs.Version }}
+      - name: Build and Push Container image
+        run: dotnet publish EasyAuthDevProxy -t:PublishContainer -p ContainerRepository="${{ github.actor }}/easyauthdevproxy" -p ContainerImageTags="${{ needs.determine-version.outputs.GitVersion_FullSemVer }}" -p ContainerRegistry="ghcr.io"
+      
