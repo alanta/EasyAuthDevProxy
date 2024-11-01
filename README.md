@@ -24,6 +24,8 @@ It's a [YARP](https://microsoft.github.io/reverse-proxy/) based reverse proxy th
 
 ## Usage
 
+### Running from source
+
 1. Make sure you have dotnet 8 installed.
 
 2. Clone this repo.
@@ -40,6 +42,18 @@ It's a [YARP](https://microsoft.github.io/reverse-proxy/) based reverse proxy th
 4. Open your browser and navigate to the proxy URL, e.g. `https://localhost:8888` in the example above.
 
 When your application redirects to the login page (for example `/.auth/login/aad`), you'll be presented with a form that allows you to configure the user and roles.
+
+### Docker
+
+The latest version of this project is available as a public container on GitHub Container Registry.
+
+The following command will run the EasyAuth Dev Proxy on `http://localhost:8888` with the backend url set to `http://localhost:5191`.
+
+```shell
+docker run --network=host -d --rm ghcr.io/alanta/easyauthdevproxy:latest -e backend=http://localhost:5191 -p 8080:8888
+```
+
+> ⚠️ This setup does not support HTTPS because there is no TLS certificate included in the container.
 
 ## Credits
 
