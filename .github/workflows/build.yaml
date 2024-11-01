@@ -1,0 +1,76 @@
+name: Build, Test, and Publish
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  pull_request_target:
+    types: [closed]
+
+jobs:
+  determine-version:
+    runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.gitversion.outputs.fullSemVer }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+            fetch-depth: 0
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3.0.0
+        with:
+          versionSpec: '6.x'
+
+      - name: Determine Version
+        id: gitversion # step id used as reference for output values
+        uses: gittools/actions/gitversion/execute@v3.0.0
+      
+  build:
+    runs-on: ubuntu-latest
+    needs: determine-version
+    env:
+      VERSION: ${{ needs.determine-version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Install dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test --configuration Release --no-restore --verbosity normal
+
+  publish:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    needs: [determine-version, build]
+    permissions:
+        contents: read
+        packages: write
+    env:
+        VERSION: ${{ needs.determine-version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build and Push Container image
+        run: dotnet publish EasyAuthDevProxy -t:PublishContainer -p ContainerRepository="${{ github.actor }}/easyauthdevproxy" -p ContainerImageTags="${{ needs.determine-version.outputs.version }};latest" -p ContainerRegistry="ghcr.io"
+      
