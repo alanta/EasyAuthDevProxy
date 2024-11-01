@@ -72,5 +72,5 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build and Push Container image
-        run: dotnet publish EasyAuthDevProxy -t:PublishContainer -p ContainerRepository="${{ github.actor }}/easyauthdevproxy" -p ContainerImageTags="${{ needs.determine-version.outputs.version }};latest" -p ContainerRegistry="ghcr.io"
+        run: dotnet publish EasyAuthDevProxy -t:PublishContainer -p ContainerRepository="${{ github.actor }}/easyauthdevproxy" -p ContainerImageTags='"${{ needs.determine-version.outputs.version }};latest"' -p ContainerRegistry="ghcr.io"
       
