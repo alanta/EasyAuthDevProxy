@@ -14,6 +14,7 @@ It's a [YARP](https://microsoft.github.io/reverse-proxy/) based reverse proxy th
 * Simulate login, similar to what [SWA CLI](https://azure.github.io/static-web-apps-cli/) enables for Azure Static WebApps
 * Run your app in a container or `dotnet run` it (or whatever platform your app runs in)
 * No need to change your app, just point the proxy to your backend
+* Support for Service Discovery to enable easy integration with Aspire
 
 ### Limitations
 
