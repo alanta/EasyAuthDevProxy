@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <IsAspireProjectResource>false</IsAspireProjectResource>
+    <PackageId>Aspire.Hosting.EasyAuthProxy</PackageId>
+    <Description>Aspire hosting integration for EasyAuth Development Proxy</Description>
+    <PackageTags>aspire;azure;container-apps;easyauth;development;proxy</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting" Version="9.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EasyAuthDevProxy\EasyAuthDevProxy.csproj" />
+  </ItemGroup>
+
+</Project>
