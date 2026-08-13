@@ -71,6 +71,7 @@ jobs:
     needs: [determine-version, build]
     permissions:
         contents: read
+        id-token: write
         packages: write
     env:
         VERSION: ${{ needs.determine-version.outputs.version }}
@@ -90,10 +91,11 @@ jobs:
           name: nuget-packages
           path: ./nupkg
 
+      - name: NuGet login (OIDC → temp API key)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
       - name: Push NuGet package to nuget.org
-        run: |
-          if [ -z "${{ secrets.NUGET_API_KEY }}" ]; then
-            echo "::warning::NUGET_API_KEY secret is not set; skipping NuGet publish. Add it in repo settings to enable this step."
-            exit 0
-          fi
-          dotnet nuget push ./nupkg/*.nupkg --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: dotnet nuget push ./nupkg/*.nupkg --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate

@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/alanta/EasyAuthDevProxy/blob/main/README.md
+    about: Check the project documentation and usage examples before opening a new issue.
