@@ -9,6 +9,10 @@
     <PackageId>Aspire.Hosting.EasyAuthProxy</PackageId>
     <Description>Aspire hosting integration for EasyAuth Development Proxy</Description>
     <PackageTags>aspire;azure;container-apps;easyauth;development;proxy</PackageTags>
+    <Authors>Alanta</Authors>
+    <RepositoryUrl>https://github.com/alanta/EasyAuthDevProxy</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\EasyAuthDevProxy\EasyAuthDevProxy.csproj" />
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

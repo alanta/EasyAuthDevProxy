@@ -17,7 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Alanta.EasyAuthDevProxy" Version="1.0.0" />
     <PackageReference Include="Aspire.Hosting.AppHost" Version="9.4.0" />
   </ItemGroup>
 
