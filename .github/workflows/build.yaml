@@ -44,7 +44,7 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v2
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: "9.0.x"
 
       - name: Install dependencies
         run: dotnet restore
@@ -54,6 +54,16 @@ jobs:
 
       - name: Run tests
         run: dotnet test --configuration Release --no-restore --verbosity normal
+
+      - name: Pack Aspire.Hosting.EasyAuthProxy
+        run: dotnet pack Aspire.Hosting.EasyAuthProxy --configuration Release --no-restore -p:PackageVersion=${{ env.VERSION }} -o ./nupkg
+
+      - name: Upload NuGet package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./nupkg/*.nupkg
+          retention-days: 7
 
   publish:
     if: github.event.pull_request.merged == true
@@ -73,4 +83,17 @@ jobs:
 
       - name: Build and Push Container image
         run: dotnet publish EasyAuthDevProxy -t:PublishContainer -p ContainerRepository="${{ github.actor }}/easyauthdevproxy" -p ContainerImageTags='"${{ needs.determine-version.outputs.version }};latest"' -p ContainerRegistry="ghcr.io"
-      
+
+      - name: Download NuGet package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./nupkg
+
+      - name: Push NuGet package to nuget.org
+        run: |
+          if [ -z "${{ secrets.NUGET_API_KEY }}" ]; then
+            echo "::warning::NUGET_API_KEY secret is not set; skipping NuGet publish. Add it in repo settings to enable this step."
+            exit 0
+          fi
+          dotnet nuget push ./nupkg/*.nupkg --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
