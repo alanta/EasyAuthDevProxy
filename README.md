@@ -8,6 +8,8 @@ This project was created to scratch an itch: I wanted to run my [Azure Container
 
 It's a [YARP](https://microsoft.github.io/reverse-proxy/) based reverse proxy that intercepts the EasyAuth endpoints to allows logging in locally.
 
+Read more about the motivation behind this project in the [launch blog post](https://alanta.nl/posts/2024/02/dev-proxy-for-easy-auth-on-container-apps).
+
 ### Features
 
 * **Easy Aspire Integration** - Fluent API for seamless integration with .NET Aspire applications
