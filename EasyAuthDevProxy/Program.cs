@@ -12,10 +12,20 @@ builder.Services.AddServiceDiscovery();
 
 builder.Services.AddRazorPages();
 
+var useUnsafeHttpsForDevelopment = builder.Environment.IsDevelopment();
+
 // Need to use the full reverse proxy to be able to add the EasyAuth headers into the forwarded
 // request.
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
+    .ConfigureHttpClient((context, handler) =>
+    {
+        if (useUnsafeHttpsForDevelopment)
+        {
+            handler.SslOptions.RemoteCertificateValidationCallback = (_, _, _, errors) =>
+                errors == System.Net.Security.SslPolicyErrors.RemoteCertificateNameMismatch;
+        }
+    })
     .AddTransforms(builderContext =>
     {
         builderContext.AddRequestTransform(EasyAuth.EasyAuthTransform);
