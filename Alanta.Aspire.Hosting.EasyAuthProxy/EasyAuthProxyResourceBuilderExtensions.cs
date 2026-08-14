@@ -118,7 +118,7 @@ public static class EasyAuthProxyResourceBuilderExtensions
         var assemblyDirectory = Path.GetDirectoryName(typeof(EasyAuthProxyResourceBuilderExtensions).Assembly.Location)!;
 
         // In-repo / ProjectReference build: the proxy's publish output is copied right next to
-        // this assembly on every build (see Aspire.Hosting.EasyAuthProxy.csproj).
+        // this assembly on every build (see Alanta.Aspire.Hosting.EasyAuthProxy.csproj).
         var sibling = Path.Combine(assemblyDirectory, "proxy", "EasyAuthDevProxy.dll");
         if (File.Exists(sibling))
         {
@@ -134,7 +134,7 @@ public static class EasyAuthProxyResourceBuilderExtensions
         }
 
         throw new FileNotFoundException(
-            "Could not locate the bundled EasyAuthDevProxy.dll next to the Aspire.Hosting.EasyAuthProxy assembly. " +
+            "Could not locate the bundled EasyAuthDevProxy.dll next to the Alanta.Aspire.Hosting.EasyAuthProxy assembly. " +
             $"Looked in '{sibling}' and '{packaged}'.");
     }
 

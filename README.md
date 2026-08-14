@@ -35,37 +35,7 @@ Read more about the motivation behind this project in the [launch blog post](htt
 
 ### Aspire Integration (Recommended)
 
-The easiest way to use EasyAuth Dev Proxy is through the Aspire hosting extension:
-
-1. Add the `Aspire.Hosting.EasyAuthProxy` project reference to your Aspire AppHost project:
-
-   ```xml
-   <ProjectReference Include="path/to/Aspire.Hosting.EasyAuthProxy.csproj" IsAspireProjectResource="false" />
-   ```
-
-2. Use the fluent API in your `Program.cs`:
-
-   ```csharp
-   var builder = DistributedApplication.CreateBuilder(args);
-
-   var catalogService = builder.AddProject<Projects.CatalogService>("catalog");
-
-   // Add EasyAuth proxy with fluent configuration
-   var easyAuthProxy = builder.AddEasyAuthProxy("easyauth")
-       .WithBackend(catalogService)
-       .WithDefaultUser("developer@contoso.com", "Admin", "User")
-       .WithIdentityProvider("aad")
-       .WithHostPort(8888);
-
-   builder.Build().Run();
-   ```
-
-3. Navigate to `https://localhost:8888` to access your application through the EasyAuth proxy.
-
-The proxy will automatically:
-- Forward requests to your backend service using Aspire's service discovery
-- Simulate Azure Container Apps EasyAuth authentication
-- Allow you to configure users and roles through the login form
+The easiest way to use EasyAuth Dev Proxy is through the [`Alanta.Aspire.Hosting.EasyAuthProxy`](https://www.nuget.org/packages/Alanta.Aspire.Hosting.EasyAuthProxy) NuGet package, which adds a fluent API to your Aspire AppHost. See the [package README](Alanta.Aspire.Hosting.EasyAuthProxy/README.md) for usage instructions.
 
 ### Running from source
 

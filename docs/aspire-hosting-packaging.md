@@ -1,4 +1,4 @@
-# Aspire.Hosting.EasyAuthProxy: packaging design
+# Alanta.Aspire.Hosting.EasyAuthProxy: packaging design
 
 `AddEasyAuthProxy()` runs the proxy as a plain .NET process, not a container. This document
 explains how that's wired up and the failure modes hit (and fixed) while building it, so the next
@@ -23,15 +23,19 @@ design fixes both problems.
 1. `EasyAuthDevProxy.csproj` is a normal framework-dependent build — no
    `RuntimeIdentifiers`/self-contained publish for the tool path (RID-specific settings are only
    used for the separate container-image publish, via `ContainerRuntimeIdentifier`).
-2. `Aspire.Hosting.EasyAuthProxy.csproj` publishes `EasyAuthDevProxy` (framework-dependent,
+2. `Alanta.Aspire.Hosting.EasyAuthProxy.csproj` publishes `EasyAuthDevProxy` (framework-dependent,
    portable) into `obj/proxy-publish/` and bundles that output **inside its own package** at the
    package root under `proxy/` — not as a second NuGet package with its own version to keep in
    sync.
-3. An auto-imported `build/Aspire.Hosting.EasyAuthProxy.targets` file (NuGet's
+3. An auto-imported `build/Alanta.Aspire.Hosting.EasyAuthProxy.targets` file (NuGet's
    `build/<PackageId>.targets` convention — auto-imported into any project that
    `PackageReference`s this package) copies `proxy/` into the *consuming* project's own output
-   directory on every build. This is what makes `dotnet add package Aspire.Hosting.EasyAuthProxy`
-   "just work" with no wiring on the consumer's end.
+   directory on every build. This is what makes `dotnet add package Alanta.Aspire.Hosting.EasyAuthProxy`
+   "just work" with no wiring on the consumer's end. **The file name must track `PackageId`, not the
+   project name** — this file was renamed when the PackageId moved off the `Aspire.*` prefix
+   (which nuget.org reserves for Microsoft) to `Alanta.Aspire.Hosting.EasyAuthProxy`; if `PackageId`
+   ever changes again, this file has to be renamed to match or the auto-import silently stops
+   working.
 4. `EasyAuthProxyResourceBuilderExtensions.ResolveProxyDllPath()` finds the bundled DLL at run
    time by looking next to its own assembly (`Assembly.Location`), checking two candidate
    locations: a `proxy/` sibling folder (works for both a real PackageReference consumer, via step
@@ -42,7 +46,7 @@ design fixes both problems.
    3 for free — NuGet's `build/*.targets` auto-import only fires for restored packages, not plain
    `ProjectReference`s. `AspireDemo.AppHost.csproj` has its own small `AfterTargets="Build"` copy
    target mirroring the same logic for exactly this reason. If you add another in-repo AppHost
-   that references `Aspire.Hosting.EasyAuthProxy` via `ProjectReference`, copy that target too.
+   that references `Alanta.Aspire.Hosting.EasyAuthProxy` via `ProjectReference`, copy that target too.
 
 ## Known rough edges
 
@@ -58,7 +62,7 @@ design fixes both problems.
   `EasyAuthDevProxy.csproj`'s `PackageReference`s for the current list), we are the redistributor
   of those binaries, not NuGet resolving them from the original publisher. All current
   dependencies are MIT or Apache-2.0, which permit this, but it's why
-  `Aspire.Hosting.EasyAuthProxy/THIRD-PARTY-NOTICES.txt` exists and is packed alongside the
+  `Alanta.Aspire.Hosting.EasyAuthProxy/THIRD-PARTY-NOTICES.txt` exists and is packed alongside the
   README. **If you add a new `PackageReference` to `EasyAuthDevProxy.csproj`, add it to that
   notices file too** (component name + copyright holder + license family; no version numbers
   needed — see below).
@@ -93,7 +97,7 @@ documented anywhere obvious, so noting them here:
   that's *also* reached via a `ProjectReference` in the same build graph — it deadlocks the
   MSBuild engine (observed: over an hour with zero output, no error). Use `<Exec Command="dotnet
   publish ...">` (an out-of-process invocation) instead, as `PublishEasyAuthDevProxy` does in
-  `Aspire.Hosting.EasyAuthProxy.csproj`.
+  `Alanta.Aspire.Hosting.EasyAuthProxy.csproj`.
 - Dynamically adding `None` items with `CopyToOutputDirectory` metadata inside a custom
   `BeforeTargets="AssignTargetPaths"` target is fragile — `AssignTargetPaths` can recompute/collide
   target paths in ways that silently drop most of the files. Prefer an explicit `<Copy

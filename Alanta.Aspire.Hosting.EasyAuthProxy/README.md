@@ -1,17 +1,17 @@
-# Aspire.Hosting.EasyAuthProxy
+# Alanta.Aspire.Hosting.EasyAuthProxy
 
 An Aspire hosting extension for [EasyAuth Dev Proxy](https://github.com/alanta/EasyAuthDevProxy), enabling easy local development of Azure Container Apps with EasyAuth authentication simulation.
 
 ## Installation
 
 ```xml
-<PackageReference Include="Aspire.Hosting.EasyAuthProxy" Version="x.y.z" />
+<PackageReference Include="Alanta.Aspire.Hosting.EasyAuthProxy" Version="x.y.z" />
 ```
 
 Or, for local development against this repo:
 
 ```xml
-<ProjectReference Include="path/to/Aspire.Hosting.EasyAuthProxy.csproj" IsAspireProjectResource="false" />
+<ProjectReference Include="path/to/Alanta.Aspire.Hosting.EasyAuthProxy.csproj" IsAspireProjectResource="false" />
 ```
 
 ## Usage

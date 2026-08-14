@@ -9,8 +9,8 @@ Guidance for agents working in this repo. Project overview and usage docs live i
 |---|---|
 | `EasyAuthDevProxy/` | The proxy itself: ASP.NET Core + YARP reverse proxy, simulates Azure Container Apps EasyAuth for local dev. |
 | `EasyAuthDevProxy.Tests/` | xUnit tests for the proxy (`Microsoft.AspNetCore.Mvc.Testing`, FluentAssertions). |
-| `Aspire.Hosting.EasyAuthProxy/` | The Aspire hosting integration (`AddEasyAuthProxy()` / `AddEasyAuthProxyContainer()`). Published as the `Aspire.Hosting.EasyAuthProxy` NuGet package. See [docs/aspire-hosting-packaging.md](docs/aspire-hosting-packaging.md) for how it bundles and ships the proxy. |
-| `AspireDemo/` | A working Aspire sample (`AppHost` + `App` + `ServiceDefaults`) exercising the hosting integration end-to-end. Use this to manually verify changes to `Aspire.Hosting.EasyAuthProxy` — see below. |
+| `Alanta.Aspire.Hosting.EasyAuthProxy/` | The Aspire hosting integration (`AddEasyAuthProxy()` / `AddEasyAuthProxyContainer()`). Published as the `Alanta.Aspire.Hosting.EasyAuthProxy` NuGet package — the project/folder/assembly all share this name; only the C# namespace stays `Aspire.Hosting` (via an explicit `RootNamespace`), so the extension methods are discoverable without an extra `using`. See [docs/aspire-hosting-packaging.md](docs/aspire-hosting-packaging.md) for how it bundles and ships the proxy. |
+| `AspireDemo/` | A working Aspire sample (`AppHost` + `App` + `ServiceDefaults`) exercising the hosting integration end-to-end. Use this to manually verify changes to `Alanta.Aspire.Hosting.EasyAuthProxy` — see below. |
 | `DemoApp/` | An older, minimal demo project. Not part of the Aspire sample; check before assuming it's exercised by anything. |
 | `docs/` | Deeper design-decision write-ups that don't belong in a README. |
 | `packages/`, `dist/` | Local NuGet feeds used for manual testing (gitignored, not part of the build). |
@@ -24,7 +24,7 @@ dotnet build EasyAuthDevProxy.slnx -c Debug
 dotnet test EasyAuthDevProxy.slnx -c Release
 ```
 
-Requires the .NET 10 SDK. `Aspire.Hosting.EasyAuthProxy.csproj` and `AspireDemo.AppHost.csproj`
+Requires the .NET 10 SDK. `Alanta.Aspire.Hosting.EasyAuthProxy.csproj` and `AspireDemo.AppHost.csproj`
 both trigger a `dotnet publish` of `EasyAuthDevProxy` as part of their own build (see the packaging
 doc) — expect a nested restore/build line for it in the output; that's expected, not a duplicate
 build bug.
@@ -37,7 +37,7 @@ first. Full diagnosis and fix in [docs/aspire-hosting-packaging.md](docs/aspire-
 
 `dotnet build`/`dotnet test` passing does **not** prove the AppHost actually runs — the hosting
 integration involves MSBuild packaging tricks and Aspire/DCP process orchestration that only show
-up at run time. After touching anything in `Aspire.Hosting.EasyAuthProxy/`, verify it for real:
+up at run time. After touching anything in `Alanta.Aspire.Hosting.EasyAuthProxy/`, verify it for real:
 
 ```
 cd AspireDemo/AspireDemo.AppHost
@@ -58,12 +58,16 @@ those.
 
 ## CI
 
-`.github/workflows/build.yaml`: builds + tests the solution, packs `Aspire.Hosting.EasyAuthProxy`
-(version from GitVersion), and on merge to `main` also publishes the EasyAuthDevProxy container
-image to `ghcr.io/alanta/easyauthdevproxy` and pushes the NuGet package to nuget.org. The
+`.github/workflows/build.yaml`: on every push/PR, builds + tests the solution and packs
+`Alanta.Aspire.Hosting.EasyAuthProxy` (version from GitVersion, Mainline mode) as a build artifact —
+this also serves as the installable preview package for PRs. Publishing only happens when a
+`vX.Y.Z` tag is pushed: that triggers the `release` job, which pushes the `.nupkg` to nuget.org,
+creates a GitHub Release, and — only if `EasyAuthDevProxy/` actually changed since the previous
+release tag — rebuilds and pushes the container image to `ghcr.io/alanta/easyauthdevproxy`. The
 `EasyAuthDevProxy` project itself is not packed/published as its own NuGet package by CI — its only
 external distribution channels right now are the container image and being bundled inside
-`Aspire.Hosting.EasyAuthProxy` (see the packaging doc).
+`Alanta.Aspire.Hosting.EasyAuthProxy` (see the packaging doc). To cut a release: `git tag vX.Y.Z && git
+push --tags` on `main`.
 
 ## Conventions / things not to relearn the hard way
 
@@ -77,7 +81,7 @@ external distribution channels right now are the container image and being bundl
   was previously the source of a ~49MB self-contained multi-RID NuGet package that got removed for
   exactly that reason.
 - If you add a `PackageReference` to `EasyAuthDevProxy.csproj`, also update
-  `Aspire.Hosting.EasyAuthProxy/THIRD-PARTY-NOTICES.txt` — its dependency closure gets bundled and
-  redistributed inside the `Aspire.Hosting.EasyAuthProxy` NuGet package, so new dependencies need
+  `Alanta.Aspire.Hosting.EasyAuthProxy/THIRD-PARTY-NOTICES.txt` — its dependency closure gets bundled and
+  redistributed inside the `Alanta.Aspire.Hosting.EasyAuthProxy` NuGet package, so new dependencies need
   their license/copyright listed there. Check the license before assuming it's fine to bundle;
   MIT and Apache-2.0 are known-good, anything else needs a fresh look.

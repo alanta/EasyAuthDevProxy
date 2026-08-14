@@ -13,18 +13,18 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AspireDemo.App\AspireDemo.App.csproj" />
-    <ProjectReference Include="..\..\Aspire.Hosting.EasyAuthProxy\Aspire.Hosting.EasyAuthProxy.csproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\..\Alanta.Aspire.Hosting.EasyAuthProxy\Alanta.Aspire.Hosting.EasyAuthProxy.csproj" IsAspireProjectResource="false" />
   </ItemGroup>
 
   <!--
-    Aspire.Hosting.EasyAuthProxy bundles the EasyAuth proxy's published output next to its own
-    assembly (see that project's .csproj). NuGet's "contentFiles" convention propagates that
+    Alanta.Aspire.Hosting.EasyAuthProxy bundles the EasyAuth proxy's published output next to its
+    own assembly (see that project's .csproj). NuGet's "contentFiles" convention propagates that
     automatically for a real PackageReference consumer, but plain in-repo ProjectReference (as
     used here) doesn't get that for free, so this demo copies it itself.
   -->
   <Target Name="CopyEasyAuthDevProxyOutput" AfterTargets="Build">
     <ItemGroup>
-      <_ProxyFile Include="..\..\Aspire.Hosting.EasyAuthProxy\bin\$(Configuration)\net10.0\proxy\**\*" />
+      <_ProxyFile Include="..\..\Alanta.Aspire.Hosting.EasyAuthProxy\bin\$(Configuration)\net10.0\proxy\**\*" />
     </ItemGroup>
     <Copy SourceFiles="@(_ProxyFile)" DestinationFolder="$(OutDir)proxy\%(RecursiveDir)" SkipUnchangedFiles="true" />
   </Target>

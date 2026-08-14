@@ -1,7 +1,7 @@
 <Project>
   <!--
-    Auto-imported into any project that PackageReferences Aspire.Hosting.EasyAuthProxy (NuGet
-    picks this up by convention: build/<PackageId>.targets). Copies the EasyAuth proxy binaries
+    Auto-imported into any project that PackageReferences Alanta.Aspire.Hosting.EasyAuthProxy
+    (NuGet picks this up by convention: build/<PackageId>.targets). Copies the EasyAuth proxy binaries
     bundled in this package (packed at the package root under proxy/) into the *consuming*
     project's own output directory, next to its own assembly - so
     EasyAuthProxyResourceBuilderExtensions.ResolveProxyDllPath() finds them without needing a
