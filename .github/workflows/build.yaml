@@ -26,7 +26,7 @@ jobs:
             fetch-depth: 0
 
       - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@26a89e5dd4fa9ba66a853e04706ba52755ca4057 # v3.1.1
+        uses: gittools/actions/gitversion/setup@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
         with:
           versionSpec: '5.x'
       - name: Use GitVersion
