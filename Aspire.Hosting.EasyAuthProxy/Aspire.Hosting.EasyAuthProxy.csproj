@@ -13,6 +13,10 @@
     <RepositoryUrl>https://github.com/alanta/EasyAuthDevProxy</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <!-- The proxy's published output, including its dependency DLLs, is packed under proxy/
+         by design (see IncludeEasyAuthDevProxyOutputInPackage below) - it's copied out and run
+         standalone, never referenced as a lib/ assembly, so NU5100 is expected noise here. -->
+    <NoWarn>$(NoWarn);NU5100</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

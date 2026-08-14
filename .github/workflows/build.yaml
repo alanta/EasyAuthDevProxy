@@ -56,6 +56,13 @@ jobs:
       - name: Run tests
         run: dotnet test EasyAuthDevProxy.slnx --configuration Release --no-restore --verbosity normal
 
+      - name: Build container image (verification only, not pushed)
+        # Exercises the same -t:PublishContainer path as the publish job's "Build and Push
+        # Container image" step, so a broken container build fails CI on the PR instead of
+        # only surfacing after merge. Writes to a local archive instead of a registry so it
+        # needs no credentials and has no side effects.
+        run: dotnet publish EasyAuthDevProxy -t:PublishContainer --configuration Release --no-restore -p:ContainerArchiveOutputPath=./container-verify.tar.gz -p:ContainerRepository=easyauthdevproxy -p:ContainerImageTag=verify
+
       - name: Pack Aspire.Hosting.EasyAuthProxy
         run: dotnet pack Aspire.Hosting.EasyAuthProxy --configuration Release --no-restore -p:PackageVersion="$VERSION" -o ./nupkg
 
