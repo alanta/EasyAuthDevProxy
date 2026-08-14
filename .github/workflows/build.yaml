@@ -17,7 +17,7 @@ jobs:
       contents: read
 
     outputs:
-      version: ${{ steps.gitversion.outputs.fullSemVer }}
+      version: ${{ steps.version.outputs.version }}
 
     steps:
       - name: Checkout code
@@ -32,6 +32,20 @@ jobs:
       - name: Use GitVersion
         id: gitversion # step id used as reference for output values
         uses: gittools/actions/gitversion/execute@26a89e5dd4fa9ba66a853e04706ba52755ca4057 # v3.1.1
+
+      - name: Determine version
+        id: version
+        # A tag push checks out in detached HEAD, which GitVersion's Mainline mode doesn't
+        # resolve back to that tag's own version - it treats the missing branch name as an
+        # unknown ref and bumps past it instead. Since a release is triggered BY pushing the
+        # tag, the tag itself is the authoritative version; only fall back to GitVersion's
+        # computed version for branch/PR builds where there's no tag to read from.
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ steps.gitversion.outputs.fullSemVer }}" >> "$GITHUB_OUTPUT"
+          fi
 
   build:
     runs-on: ubuntu-latest
