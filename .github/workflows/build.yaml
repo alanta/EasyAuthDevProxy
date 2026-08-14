@@ -7,47 +7,48 @@ on:
   pull_request:
     branches:
       - main
-  pull_request_target:
-    types: [closed]
 
 jobs:
   determine-version:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     outputs:
       version: ${{ steps.gitversion.outputs.fullSemVer }}
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
             fetch-depth: 0
 
       - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v3.0.0
+        uses: gittools/actions/gitversion/setup@26a89e5dd4fa9ba66a853e04706ba52755ca4057 # v3.1.1
         with:
-          versionSpec: '6.x'
-
-      - name: Determine Version
+          versionSpec: '5.x'
+      - name: Use GitVersion
         id: gitversion # step id used as reference for output values
-        uses: gittools/actions/gitversion/execute@v3.0.0
+        uses: gittools/actions/gitversion/execute@26a89e5dd4fa9ba66a853e04706ba52755ca4057 # v3.1.1
       
   build:
     runs-on: ubuntu-latest
     needs: determine-version
+    permissions:
+      contents: read
     env:
       VERSION: ${{ needs.determine-version.outputs.version }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           dotnet-version: "10.0.x"
 
       - name: Install dependencies
-        run: dotnet restore EasyAuthDevProxy.slnx
+        run: dotnet restore EasyAuthDevProxy.slnx --locked-mode
 
       - name: Build
         run: dotnet build EasyAuthDevProxy.slnx --configuration Release --no-restore
@@ -56,17 +57,19 @@ jobs:
         run: dotnet test EasyAuthDevProxy.slnx --configuration Release --no-restore --verbosity normal
 
       - name: Pack Aspire.Hosting.EasyAuthProxy
-        run: dotnet pack Aspire.Hosting.EasyAuthProxy --configuration Release --no-restore -p:PackageVersion=${{ env.VERSION }} -o ./nupkg
+        run: dotnet pack Aspire.Hosting.EasyAuthProxy --configuration Release --no-restore -p:PackageVersion="$VERSION" -o ./nupkg
 
       - name: Upload NuGet package artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: nuget-packages
           path: ./nupkg/*.nupkg
           retention-days: 7
 
   publish:
-    if: github.event.pull_request.merged == true
+    # main only advances via a merged PR or a direct push; either way, a push event to
+    # main means the code here is trusted and ready to publish.
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     needs: [determine-version, build]
     permissions:
@@ -77,25 +80,37 @@ jobs:
         VERSION: ${{ needs.determine-version.outputs.version }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Log in to GitHub Container Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
 
       - name: Build and Push Container image
-        run: dotnet publish EasyAuthDevProxy -t:PublishContainer -p ContainerRepository="${{ github.actor }}/easyauthdevproxy" -p ContainerImageTags='"${{ needs.determine-version.outputs.version }};latest"' -p ContainerRegistry="ghcr.io"
+        env:
+          ACTOR: ${{ github.actor }}
+        run: dotnet publish EasyAuthDevProxy -t:PublishContainer -p ContainerRepository="$ACTOR/easyauthdevproxy" -p ContainerImageTags="\"$VERSION;latest\"" -p ContainerRegistry="ghcr.io"
 
       - name: Download NuGet package artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: nuget-packages
           path: ./nupkg
 
       - name: NuGet login (OIDC → temp API key)
         id: login
-        uses: NuGet/login@v1
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
         with:
           user: ${{ secrets.NUGET_USER }}
 
+      # Deviation from SECURITY_GUIDELINES.md 1.4 (never pass a secret as a command-line
+      # argument): `dotnet nuget push` only accepts --api-key on the command line, per
+      # Microsoft's own trusted-publishing example (learn.microsoft.com/nuget/nuget-org/
+      # trusted-publishing). Risk is limited: this is nuget.org's short-lived (1h) trusted
+      # publishing key, scoped to this push, on a single ephemeral GitHub-hosted runner.
       - name: Push NuGet package to nuget.org
-        run: dotnet nuget push ./nupkg/*.nupkg --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        run: dotnet nuget push ./nupkg/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
