@@ -125,7 +125,7 @@ public class BackendAddressResolver(
                 // i.e, use Authority and not Host.
                 resolvedHost = originalUri.Authority;
             }
-
+            
             var config = originalConfig with { Host = resolvedHost, Address = resolvedAddress, Health = healthAddress };
             results.Add((name, config));
         }

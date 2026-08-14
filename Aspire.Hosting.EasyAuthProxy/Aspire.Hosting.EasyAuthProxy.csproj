@@ -1,0 +1,90 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <IsAspireProjectResource>false</IsAspireProjectResource>
+    <PackageId>Aspire.Hosting.EasyAuthProxy</PackageId>
+    <Description>Aspire hosting integration for EasyAuth Development Proxy</Description>
+    <PackageTags>aspire;azure;container-apps;easyauth;development;proxy</PackageTags>
+    <Authors>Alanta</Authors>
+    <RepositoryUrl>https://github.com/alanta/EasyAuthDevProxy</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <!-- The proxy's published output, including its dependency DLLs, is packed under proxy/
+         by design (see IncludeEasyAuthDevProxyOutputInPackage below) - it's copied out and run
+         standalone, never referenced as a lib/ assembly, so NU5100 is expected noise here. -->
+    <NoWarn>$(NoWarn);NU5100</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <!-- Required because we bundle the proxy's dependency closure (see below) - see that notices file for details. -->
+    <None Include="THIRD-PARTY-NOTICES.txt" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <!--
+    The EasyAuth proxy itself is a plain, portable (framework-dependent, RID-less) ASP.NET Core
+    app - no container required to run it. We publish EasyAuthDevProxy here and bundle its
+    output inside *this* package (rather than shipping it as a second NuGet package with its own
+    version to keep in sync), so EasyAuthProxyResourceBuilderExtensions can find it next to its
+    own assembly at run time on any consumer's machine, with no dependency on the NuGet
+    global-packages layout or a hardcoded version/path.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\EasyAuthDevProxy\EasyAuthDevProxy.csproj"
+                       IsAspireProjectResource="false"
+                       ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <EasyAuthDevProxyPublishDir>$(MSBuildThisFileDirectory)obj\proxy-publish\</EasyAuthDevProxyPublishDir>
+  </PropertyGroup>
+
+  <!--
+    Published out-of-process (not via the <MSBuild> task) because EasyAuthDevProxy is also
+    reached through the ProjectReference above, in the same build graph; invoking its Publish
+    target in-process while it's already scheduled as a reference deadlocks the MSBuild engine.
+  -->
+  <Target Name="PublishEasyAuthDevProxy" BeforeTargets="AssignTargetPaths;_GetPackageFiles">
+    <Exec Command="dotnet publish &quot;..\EasyAuthDevProxy\EasyAuthDevProxy.csproj&quot; -c $(Configuration) -o &quot;$(EasyAuthDevProxyPublishDir)&quot;" />
+  </Target>
+
+  <!--
+    Plain file copy, deliberately not relying on CopyToOutputDirectory/AssignTargetPaths: that
+    pipeline recomputes TargetPath for None items on its own and collided with these files. This
+    covers this project's own output directory only (useful when this assembly is loaded directly
+    from its own bin/, e.g. running it in isolation) - see AspireDemo.AppHost.csproj for how an
+    in-repo ProjectReference consumer picks the files up too.
+  -->
+  <Target Name="CopyEasyAuthDevProxyOutputToBuildOutput" AfterTargets="Build" DependsOnTargets="PublishEasyAuthDevProxy">
+    <ItemGroup>
+      <_ProxyPublishFile Include="$(EasyAuthDevProxyPublishDir)**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_ProxyPublishFile)" DestinationFolder="$(OutDir)proxy\%(RecursiveDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+  <!--
+    Packed at the package root (proxy/) plus an auto-imported build/Aspire.Hosting.EasyAuthProxy.targets
+    (see that file) that copies it into a *consuming* project's own output directory. NuGet's
+    "contentFiles" convention looked like the natural fit here but its copyToOutput flag wasn't
+    actually being honored by the SDK in testing, so this uses the same well-established
+    build/<PackageId>.targets auto-import mechanism instead.
+  -->
+  <Target Name="IncludeEasyAuthDevProxyOutputInPackage" DependsOnTargets="PublishEasyAuthDevProxy" BeforeTargets="_GetPackageFiles">
+    <ItemGroup>
+      <None Include="$(EasyAuthDevProxyPublishDir)**\*" Pack="true" PackagePath="proxy\%(RecursiveDir)" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <None Include="build\Aspire.Hosting.EasyAuthProxy.targets" Pack="true" PackagePath="build\Aspire.Hosting.EasyAuthProxy.targets" />
+  </ItemGroup>
+
+</Project>

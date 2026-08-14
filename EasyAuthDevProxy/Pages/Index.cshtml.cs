@@ -46,12 +46,18 @@ namespace EasyAuthDevProxy.Pages
             {
                 return Page();
             }
+
+            var roleClaims = Roles?
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(r => new UserClaim { Type = "roles", Value = r })
+                .ToArray() ?? [];
+
             var principal = new MsClientPrincipal
             {
                 AuthenticationType = Idp,
                 Claims = [
                     new UserClaim { Type = "name", Value = UserName! },
-                    .. Roles?.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(r => new UserClaim { Type = "roles", Value = r }).ToArray(),
+                    .. roleClaims,
                     new UserClaim { Type = EasyAuth.Claims.ObjectId, Value = UserId! },
                 ],
                 NameType = "name",

@@ -8,8 +8,11 @@ This project was created to scratch an itch: I wanted to run my [Azure Container
 
 It's a [YARP](https://microsoft.github.io/reverse-proxy/) based reverse proxy that intercepts the EasyAuth endpoints to allows logging in locally.
 
+Read more about the motivation behind this project in the [launch blog post](https://alanta.nl/posts/2024/02/dev-proxy-for-easy-auth-on-container-apps).
+
 ### Features
 
+* **Easy Aspire Integration** - Fluent API for seamless integration with .NET Aspire applications
 * Run your container app with EasyAuth enabled in local development
 * Simulate login, similar to what [SWA CLI](https://azure.github.io/static-web-apps-cli/) enables for Azure Static WebApps
 * Run your app in a container or `dotnet run` it (or whatever platform your app runs in)
@@ -20,14 +23,53 @@ It's a [YARP](https://microsoft.github.io/reverse-proxy/) based reverse proxy th
 
 * Credentials are faked and not backed by any identity provider.
 * Only the bare minimum of claims is added to the client identity: username, roles, id, provider.
-* Haven't figured out single-click launch yet, so you need to run it from the command line.
 * Assumes your app allows anonymous access and redirect to login when needed.
+
+### What's New
+
+* ✅ **Single-click launch** - Now available through Aspire integration!
+* ✅ **Automatic service discovery** - No need to manually configure backend URLs
+* ✅ **Fluent configuration API** - Easy to set up and customize
 
 ## Usage
 
+### Aspire Integration (Recommended)
+
+The easiest way to use EasyAuth Dev Proxy is through the Aspire hosting extension:
+
+1. Add the `Aspire.Hosting.EasyAuthProxy` project reference to your Aspire AppHost project:
+
+   ```xml
+   <ProjectReference Include="path/to/Aspire.Hosting.EasyAuthProxy.csproj" IsAspireProjectResource="false" />
+   ```
+
+2. Use the fluent API in your `Program.cs`:
+
+   ```csharp
+   var builder = DistributedApplication.CreateBuilder(args);
+
+   var catalogService = builder.AddProject<Projects.CatalogService>("catalog");
+
+   // Add EasyAuth proxy with fluent configuration
+   var easyAuthProxy = builder.AddEasyAuthProxy("easyauth")
+       .WithBackend(catalogService)
+       .WithDefaultUser("developer@contoso.com", "Admin", "User")
+       .WithIdentityProvider("aad")
+       .WithHostPort(8888);
+
+   builder.Build().Run();
+   ```
+
+3. Navigate to `https://localhost:8888` to access your application through the EasyAuth proxy.
+
+The proxy will automatically:
+- Forward requests to your backend service using Aspire's service discovery
+- Simulate Azure Container Apps EasyAuth authentication
+- Allow you to configure users and roles through the login form
+
 ### Running from source
 
-1. Make sure you have dotnet 8 installed.
+1. Make sure you have .NET 10 installed.
 
 2. Clone this repo.
 

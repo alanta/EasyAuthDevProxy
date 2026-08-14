@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+ <Sdk Name="Aspire.AppHost.Sdk" Version="13.4.6" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsAspireHost>true</IsAspireHost>
+    <UserSecretsId>515f2fd8-e8d4-4b2e-aa3c-28a1b2c9362b</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AspireDemo.App\AspireDemo.App.csproj" />
+    <ProjectReference Include="..\..\Aspire.Hosting.EasyAuthProxy\Aspire.Hosting.EasyAuthProxy.csproj" IsAspireProjectResource="false" />
+  </ItemGroup>
+
+  <!--
+    Aspire.Hosting.EasyAuthProxy bundles the EasyAuth proxy's published output next to its own
+    assembly (see that project's .csproj). NuGet's "contentFiles" convention propagates that
+    automatically for a real PackageReference consumer, but plain in-repo ProjectReference (as
+    used here) doesn't get that for free, so this demo copies it itself.
+  -->
+  <Target Name="CopyEasyAuthDevProxyOutput" AfterTargets="Build">
+    <ItemGroup>
+      <_ProxyFile Include="..\..\Aspire.Hosting.EasyAuthProxy\bin\$(Configuration)\net10.0\proxy\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_ProxyFile)" DestinationFolder="$(OutDir)proxy\%(RecursiveDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>
