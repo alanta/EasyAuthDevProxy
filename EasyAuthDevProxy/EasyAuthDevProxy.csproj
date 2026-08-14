@@ -2,41 +2,19 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <IsPackable>true</IsPackable>
     <TargetFramework>net10.0</TargetFramework>
-    <RuntimeIdentifiers>linux-x64;win-x64;osx-x64</RuntimeIdentifiers>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
     <ContainerRuntimeIdentifier>linux-x64</ContainerRuntimeIdentifier>
     <ContainerFamily>noble-chiseled</ContainerFamily>
-    <!-- NuGet package metadata -->
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageId>Alanta.EasyAuthDevProxy</PackageId>
-    <Version>1.0.0</Version>
-    <Authors>Alanta</Authors>
-    <Description>Development reverse proxy for EasyAuth simulation, distributed as a NuGet tool or dependency.</Description>
-    <PackageTags>reverse-proxy;authentication;aspire;devproxy</PackageTags>
-    <RepositoryUrl>https://github.com/alanta/EasyAuthDevProxy</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/alanta/EasyAuthDevProxy</PackageProjectUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <PackageOutputPath>$(OutputPath)</PackageOutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Flurl" Version="4.0.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="3.1.2" />
     <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" Version="10.9.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.6" />
     <PackageReference Include="Yarp.ReverseProxy" Version="2.3.0" />
-  </ItemGroup>
-
-  <!-- Pack the published output as tools in the NuGet package -->
-  <ItemGroup>
-    <None Include="bin\Release\net9.0\linux-x64\publish\**\*" Pack="true" PackagePath="tools/" />
   </ItemGroup>
 
 </Project>

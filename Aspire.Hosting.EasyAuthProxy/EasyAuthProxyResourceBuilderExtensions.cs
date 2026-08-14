@@ -12,10 +12,10 @@ public static class EasyAuthProxyResourceBuilderExtensions
     /// </summary>
     /// <param name="builder">The resource builder.</param>
     /// <param name="backend">The backend service to proxy requests to.</param>
-    /// <returns>A reference to the <see cref="IResourceBuilder{EasyAuthProxyContainerResource}"/>.</returns>
-    public static IResourceBuilder<EasyAuthProxyContainerResource> WithBackend(
-        this IResourceBuilder<EasyAuthProxyContainerResource> builder,
+    public static IResourceBuilder<TResource> WithBackend<TResource>(
+        this IResourceBuilder<TResource> builder,
         IResourceBuilder<IResourceWithServiceDiscovery> backend)
+        where TResource : IEasyAuthProxyResource
     {
         builder.WithReference(backend);
         return builder.WithEnvironment(context =>
@@ -25,11 +25,12 @@ public static class EasyAuthProxyResourceBuilderExtensions
     }
 
     /// <summary>
-    /// Configures the host port that the YARP resource is exposed on instead of using randomly assigned port.
+    /// Configures the host port that the proxy is exposed on instead of using a randomly assigned port.
     /// </summary>
-    /// <param name="builder">The resource builder for YARP.</param>
-    /// <param name="port">The port to bind on the host. If <see langword="null"/> is used random port will be assigned.</param>
-    public static IResourceBuilder<EasyAuthProxyContainerResource> WithHostPort(this IResourceBuilder<EasyAuthProxyContainerResource> builder, int? port)
+    /// <param name="builder">The resource builder for the EasyAuth proxy.</param>
+    /// <param name="port">The port to bind on the host. If <see langword="null"/> a random port will be assigned.</param>
+    public static IResourceBuilder<TResource> WithHostPort<TResource>(this IResourceBuilder<TResource> builder, int? port)
+        where TResource : IEasyAuthProxyResource
     {
         ArgumentNullException.ThrowIfNull(builder);
 
@@ -40,13 +41,47 @@ public static class EasyAuthProxyResourceBuilderExtensions
     }
 
     /// <summary>
-    /// Adds an EasyAuth development proxy resource, running as a container pulled from
-    /// <c>ghcr.io/alanta/easyauthdevproxy</c>.
+    /// Adds an EasyAuth development proxy resource running as a plain .NET process. This is the
+    /// default and recommended way to add the proxy: it only requires a matching .NET runtime,
+    /// not a container engine. The proxy binaries are bundled inside this package.
     /// </summary>
     /// <param name="builder">The distributed application builder.</param>
     /// <param name="name">The name of the resource.</param>
-    /// <returns>A reference to the <see cref="IResourceBuilder{EasyAuthProxyContainerResource}"/>.</returns>
-    public static IResourceBuilder<EasyAuthProxyContainerResource> AddEasyAuthProxy(this IDistributedApplicationBuilder builder, string name)
+    public static IResourceBuilder<EasyAuthProxyExecutableResource> AddEasyAuthProxy(this IDistributedApplicationBuilder builder, string name)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        var proxyDllPath = ResolveProxyDllPath();
+        var workingDirectory = Path.GetDirectoryName(proxyDllPath)!;
+
+        var resource = new EasyAuthProxyExecutableResource(name, "dotnet", workingDirectory);
+        var resourceBuilder = builder.AddResource(resource)
+            .WithArgs(proxyDllPath)
+            .WithHttpEndpoint(name: "http", targetPort: 8080)
+            .WithEnvironment(context =>
+            {
+                // Unlike project resources, plain executables don't get ASPNETCORE_URLS
+                // populated automatically from the endpoint - and WithHttpEndpoint's own
+                // `env:` shortcut only injects the bare port, which Kestrel rejects. Bind the
+                // full URL ourselves instead.
+                var endpoint = resource.GetEndpoint("http");
+                context.EnvironmentVariables["ASPNETCORE_URLS"] = $"http://+:{endpoint.TargetPort}";
+            })
+            .WithEnvironment("ASPNETCORE_ENVIRONMENT", builder.Environment.EnvironmentName)
+            .WithOtlpExporter();
+
+        return resourceBuilder;
+    }
+
+    /// <summary>
+    /// Adds an EasyAuth development proxy resource, running as a container pulled from
+    /// <c>ghcr.io/alanta/easyauthdevproxy</c>. Prefer <see cref="AddEasyAuthProxy"/> unless you
+    /// specifically need container-based isolation - this path requires Docker or Podman and
+    /// pulls a full container image.
+    /// </summary>
+    /// <param name="builder">The distributed application builder.</param>
+    /// <param name="name">The name of the resource.</param>
+    public static IResourceBuilder<EasyAuthProxyContainerResource> AddEasyAuthProxyContainer(this IDistributedApplicationBuilder builder, string name)
     {
         var resource = new EasyAuthProxyContainerResource(name);
         var yarpBuilder = builder.AddResource(resource)
@@ -74,10 +109,35 @@ public static class EasyAuthProxyResourceBuilderExtensions
             // perspective, the url will be something like https://docker.host.internal, so it will NOT be valid.
             yarpBuilder.WithEnvironment("YARP_UNSAFE_OLTP_CERT_ACCEPT_ANY_SERVER_CERTIFICATE", "true");
         }
-        
+
         return yarpBuilder;
     }
-    
+
+    private static string ResolveProxyDllPath()
+    {
+        var assemblyDirectory = Path.GetDirectoryName(typeof(EasyAuthProxyResourceBuilderExtensions).Assembly.Location)!;
+
+        // In-repo / ProjectReference build: the proxy's publish output is copied right next to
+        // this assembly on every build (see Aspire.Hosting.EasyAuthProxy.csproj).
+        var sibling = Path.Combine(assemblyDirectory, "proxy", "EasyAuthDevProxy.dll");
+        if (File.Exists(sibling))
+        {
+            return sibling;
+        }
+
+        // Packed NuGet layout: this assembly lives under lib/<tfm>/, the proxy output is packed
+        // at the package root under proxy/.
+        var packaged = Path.GetFullPath(Path.Combine(assemblyDirectory, "..", "..", "proxy", "EasyAuthDevProxy.dll"));
+        if (File.Exists(packaged))
+        {
+            return packaged;
+        }
+
+        throw new FileNotFoundException(
+            "Could not locate the bundled EasyAuthDevProxy.dll next to the Aspire.Hosting.EasyAuthProxy assembly. " +
+            $"Looked in '{sibling}' and '{packaged}'.");
+    }
+
     private static string BuildEndpointUri(IResourceWithServiceDiscovery resource)
     {
         var resourceName = resource.Name;
