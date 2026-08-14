@@ -6,7 +6,12 @@
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <IsAspireProjectResource>false</IsAspireProjectResource>
-    <PackageId>Aspire.Hosting.EasyAuthProxy</PackageId>
+    <!-- Kept as Aspire.Hosting (not the default derived from the project/package name) so the
+         extension methods land in the same namespace Aspire's own hosting packages use, which is
+         already `using`d by any AppHost project - no extra using statement needed to discover
+         AddEasyAuthProxy()/AddEasyAuthProxyContainer(). -->
+    <RootNamespace>Aspire.Hosting</RootNamespace>
+    <PackageId>Alanta.Aspire.Hosting.EasyAuthProxy</PackageId>
     <Description>Aspire hosting integration for EasyAuth Development Proxy</Description>
     <PackageTags>aspire;azure;container-apps;easyauth;development;proxy</PackageTags>
     <Authors>Alanta</Authors>
@@ -24,7 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
     <!-- Required because we bundle the proxy's dependency closure (see below) - see that notices file for details. -->
     <None Include="THIRD-PARTY-NOTICES.txt" Pack="true" PackagePath="\" />
   </ItemGroup>
@@ -71,7 +76,7 @@
   </Target>
 
   <!--
-    Packed at the package root (proxy/) plus an auto-imported build/Aspire.Hosting.EasyAuthProxy.targets
+    Packed at the package root (proxy/) plus an auto-imported build/Alanta.Aspire.Hosting.EasyAuthProxy.targets
     (see that file) that copies it into a *consuming* project's own output directory. NuGet's
     "contentFiles" convention looked like the natural fit here but its copyToOutput flag wasn't
     actually being honored by the SDK in testing, so this uses the same well-established
@@ -84,7 +89,7 @@
   </Target>
 
   <ItemGroup>
-    <None Include="build\Aspire.Hosting.EasyAuthProxy.targets" Pack="true" PackagePath="build\Aspire.Hosting.EasyAuthProxy.targets" />
+    <None Include="build\Alanta.Aspire.Hosting.EasyAuthProxy.targets" Pack="true" PackagePath="build\Alanta.Aspire.Hosting.EasyAuthProxy.targets" />
   </ItemGroup>
 
 </Project>

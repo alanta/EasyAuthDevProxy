@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
   pull_request:
     branches:
       - main
@@ -30,7 +32,7 @@ jobs:
       - name: Use GitVersion
         id: gitversion # step id used as reference for output values
         uses: gittools/actions/gitversion/execute@26a89e5dd4fa9ba66a853e04706ba52755ca4057 # v3.1.1
-      
+
   build:
     runs-on: ubuntu-latest
     needs: determine-version
@@ -57,30 +59,33 @@ jobs:
         run: dotnet test EasyAuthDevProxy.slnx --configuration Release --no-restore --verbosity normal
 
       - name: Build container image (verification only, not pushed)
-        # Exercises the same -t:PublishContainer path as the publish job's "Build and Push
+        # Exercises the same -t:PublishContainer path as the release job's "Build and Push
         # Container image" step, so a broken container build fails CI on the PR instead of
         # only surfacing after merge. Writes to a local archive instead of a registry so it
         # needs no credentials and has no side effects.
         run: dotnet publish EasyAuthDevProxy -t:PublishContainer --configuration Release --no-restore -p:ContainerArchiveOutputPath=./container-verify.tar.gz -p:ContainerRepository=easyauthdevproxy -p:ContainerImageTag=verify
 
-      - name: Pack Aspire.Hosting.EasyAuthProxy
-        run: dotnet pack Aspire.Hosting.EasyAuthProxy --configuration Release --no-restore -p:PackageVersion="$VERSION" -o ./nupkg
+      - name: Pack Alanta.Aspire.Hosting.EasyAuthProxy
+        run: dotnet pack Alanta.Aspire.Hosting.EasyAuthProxy --configuration Release --no-restore -p:PackageVersion="$VERSION" -o ./nupkg
 
       - name: Upload NuGet package artifact
+        # Also serves as the preview package for pull requests: GitVersion (Mainline mode)
+        # assigns PR builds a prerelease version, and reviewers can download this artifact
+        # to try the package locally. Not published to any feed - see the release job for that.
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: nuget-packages
           path: ./nupkg/*.nupkg
           retention-days: 7
 
-  publish:
-    # main only advances via a merged PR or a direct push; either way, a push event to
-    # main means the code here is trusted and ready to publish.
-    if: github.event_name == 'push'
+  release:
+    # Only a pushed vX.Y.Z tag cuts a release - regular pushes to main no longer auto-publish,
+    # so tags/Releases/published packages stay in lockstep (see repo discussion history).
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     needs: [determine-version, build]
     permissions:
-        contents: read
+        contents: write
         id-token: write
         packages: write
     env:
@@ -88,17 +93,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-
-      - name: Log in to GitHub Container Registry
-        env:
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ACTOR: ${{ github.actor }}
-        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
-
-      - name: Build and Push Container image
-        env:
-          ACTOR: ${{ github.actor }}
-        run: dotnet publish EasyAuthDevProxy -t:PublishContainer -p ContainerRepository="$ACTOR/easyauthdevproxy" -p ContainerImageTags="\"$VERSION;latest\"" -p ContainerRegistry="ghcr.io"
+        with:
+          fetch-depth: 0
 
       - name: Download NuGet package artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -121,3 +117,46 @@ jobs:
         env:
           NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
         run: dotnet nuget push ./nupkg/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Determine previous release tag
+        id: prevtag
+        run: |
+          CURRENT_TAG="${GITHUB_REF_NAME}"
+          PREV_TAG=$(git tag --sort=-creatordate | grep -v "^${CURRENT_TAG}$" | head -n1 || true)
+          echo "tag=$PREV_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Check for proxy changes since previous release
+        id: proxychanges
+        run: |
+          PREV_TAG="${{ steps.prevtag.outputs.tag }}"
+          if [ -z "$PREV_TAG" ]; then
+            echo "No previous release tag found - treating as changed."
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          elif git diff --quiet "$PREV_TAG" HEAD -- EasyAuthDevProxy Directory.Build.props Directory.Packages.props; then
+            echo "No changes to the proxy since $PREV_TAG - skipping container publish."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Proxy changed since $PREV_TAG."
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Log in to GitHub Container Registry
+        if: steps.proxychanges.outputs.changed == 'true'
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+
+      - name: Build and Push Container image
+        if: steps.proxychanges.outputs.changed == 'true'
+        env:
+          ACTOR: ${{ github.actor }}
+        run: dotnet publish EasyAuthDevProxy -t:PublishContainer -p ContainerRepository="$ACTOR/easyauthdevproxy" -p ContainerImageTags="\"$VERSION;latest\"" -p ContainerRegistry="ghcr.io"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" ./nupkg/*.nupkg \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes
