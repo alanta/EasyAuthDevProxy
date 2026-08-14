@@ -3,23 +3,24 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <IsPackable>true</IsPackable>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <RuntimeIdentifiers>linux-x64;win-x64;osx-x64</RuntimeIdentifiers>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
     <ContainerRuntimeIdentifier>linux-x64</ContainerRuntimeIdentifier>
-    <ContainerFamily>jammy-chiseled</ContainerFamily>
+    <ContainerFamily>noble-chiseled</ContainerFamily>
     <!-- NuGet package metadata -->
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Alanta.EasyAuthDevProxy</PackageId>
     <Version>1.0.0</Version>
-    <Authors>YourName</Authors>
-    <Company>YourCompany</Company>
+    <Authors>Alanta</Authors>
     <Description>Development reverse proxy for EasyAuth simulation, distributed as a NuGet tool or dependency.</Description>
     <PackageTags>reverse-proxy;authentication;aspire;devproxy</PackageTags>
-    <RepositoryUrl>https://github.com/yourorg/EasyAuthDevProxy</RepositoryUrl>
+    <RepositoryUrl>https://github.com/alanta/EasyAuthDevProxy</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/alanta/EasyAuthDevProxy</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -27,8 +28,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Flurl" Version="4.0.0" />
-    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
-    <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" Version="9.4.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="3.1.2" />
+    <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" Version="10.9.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.6" />
     <PackageReference Include="Yarp.ReverseProxy" Version="2.3.0" />
   </ItemGroup>

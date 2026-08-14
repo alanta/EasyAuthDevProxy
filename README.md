@@ -67,7 +67,7 @@ The proxy will automatically:
 
 ### Running from source
 
-1. Make sure you have dotnet 9 installed.
+1. Make sure you have .NET 10 installed.
 
 2. Clone this repo.
 
