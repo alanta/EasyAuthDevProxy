@@ -89,6 +89,26 @@ var easyAuthProxy = builder.AddEasyAuthProxy("easyauth")
 > `#pragma warning disable ASPIRECERTIFICATES001` (or `<NoWarn>ASPIRECERTIFICATES001</NoWarn>`).
 > Nothing extra is needed if you stick with the default developer certificate.
 
+### Backends over HTTPS
+
+When your backend serves HTTPS the proxy has to validate its certificate, and the developer
+certificate usually fails that: the name doesn't match once the backend is reached through service
+discovery, and on Linux `dotnet dev-certs https --trust` only partially succeeds, so the chain
+isn't trusted either. The proxy therefore accepts any certificate the backend presents when
+`ASPNETCORE_ENVIRONMENT` is `Development` - it logs a warning at startup saying so.
+
+This means the backend is **not** authenticated. That's the right trade for local development, but
+if you're pointing the proxy at something you don't fully control, turn it off and make sure the
+backend serves a certificate that validates:
+
+```csharp
+var easyAuthProxy = builder.AddEasyAuthProxy("easyauth")
+    .WithBackend(catalogService)
+    .WithEnvironment("EasyAuth__AllowUntrustedBackendCertificate", "false");
+```
+
+Outside `Development` the setting defaults to `false` and has to be switched on deliberately.
+
 ## How it Works
 
 1. **Service Discovery**: The proxy automatically discovers your backend services using Aspire's built-in service discovery

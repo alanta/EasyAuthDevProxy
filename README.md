@@ -52,6 +52,12 @@ The easiest way to use EasyAuth Dev Proxy is through the [`Alanta.Aspire.Hosting
   
   The `urls` parameter is the frontend URL of the proxy that you'll point your browser to.
   The `backend` parameter is the URL of your backend app.
+
+  If your backend serves HTTPS with the developer certificate, note that the proxy accepts any
+  certificate the backend presents while `ASPNETCORE_ENVIRONMENT` is `Development` - the developer
+  certificate otherwise fails validation on both the host name and the chain. Set
+  `EasyAuth__AllowUntrustedBackendCertificate=false` to require a valid certificate instead; it
+  already defaults to `false` outside `Development`.
   
 4. Open your browser and navigate to the proxy URL, e.g. `https://localhost:8888` in the example above.
 
