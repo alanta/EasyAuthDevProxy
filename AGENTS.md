@@ -8,7 +8,7 @@ Guidance for agents working in this repo. Project overview and usage docs live i
 | Path | What it is |
 |---|---|
 | `EasyAuthDevProxy/` | The proxy itself: ASP.NET Core + YARP reverse proxy, simulates Azure Container Apps EasyAuth for local dev. |
-| `EasyAuthDevProxy.Tests/` | xUnit tests for the proxy (`Microsoft.AspNetCore.Mvc.Testing`, FluentAssertions). |
+| `EasyAuthDevProxy.Tests/` | xUnit tests for the proxy (`Microsoft.AspNetCore.Mvc.Testing`, Shouldly). |
 | `Alanta.Aspire.Hosting.EasyAuthProxy.Tests/` | xUnit tests for the hosting integration. Application-model only — they build the model in memory and assert on annotations, no DCP, containers or dashboard. |
 | `Alanta.Aspire.Hosting.EasyAuthProxy/` | The Aspire hosting integration (`AddEasyAuthProxy()` / `AddEasyAuthProxyContainer()`). Published as the `Alanta.Aspire.Hosting.EasyAuthProxy` NuGet package — the project/folder/assembly all share this name; only the C# namespace stays `Aspire.Hosting` (via an explicit `RootNamespace`), so the extension methods are discoverable without an extra `using`. See [docs/aspire-hosting-packaging.md](docs/aspire-hosting-packaging.md) for how it bundles and ships the proxy. |
 | `AspireDemo/` | A working Aspire sample (`AppHost` + `App` + `ServiceDefaults`) exercising the hosting integration end-to-end. Use this to manually verify changes to `Alanta.Aspire.Hosting.EasyAuthProxy` — see below. |

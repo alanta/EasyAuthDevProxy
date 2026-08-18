@@ -84,15 +84,31 @@ design fixes both problems.
 These aren't specific to this repo, but they cost real time to diagnose and aren't obviously
 documented anywhere obvious, so noting them here:
 
-- `WithHttpEndpoint(name:, env:)`'s `env:` shortcut only injects the **bare port number** into
-  that env var for `ExecutableResource` — project resources get a fully-formed URL for free,
-  executables don't. Kestrel will reject a bare port number as an invalid `ASPNETCORE_URLS` value.
-  Build the URL explicitly instead: `context.EnvironmentVariables["ASPNETCORE_URLS"] =
-  $"http://+:{endpoint.TargetPort}"` inside a `WithEnvironment(context => ...)` callback.
-- `WithHttpEndpoint` needs an explicit `targetPort:` for executable resources. Without it, DCP
-  fails to create the endpoint's service object ("information about the port to expose the service
-  is missing; service-producer annotation is invalid") and the resource never leaves `Finished`
-  state. Containers had this working already (`targetPort: 8080`); executables need the same.
+- **Don't pin `targetPort:` on an executable resource, and don't compute `ASPNETCORE_URLS`
+  yourself.** For an `ExecutableResource` the target port is the literal OS port Kestrel binds, so
+  a hardcoded `targetPort: 8080` makes the proxy collide with anything else already holding 8080 —
+  that was [issue #11](https://github.com/alanta/EasyAuthDevProxy/issues/11). Containers are the
+  exception: their target port is container-internal and remapped by the runtime, so pinning
+  `8080`/`8081` there is fine.
+
+  Simply dropping `targetPort:` doesn't work either. DCP then has no port information for the
+  service producer and refuses to create the endpoint ("information about the port to expose the
+  service is missing; service-producer annotation is invalid"), and a `WithEnvironment(context =>
+  ...)` callback computing `$"http://+:{endpoint.TargetPort}"` reads a `TargetPort` that is still
+  `null` at that point, leaving Kestrel to bind port 80 and die with `Permission denied`.
+
+  The working form binds the endpoint to ASP.NET Core's own port variables, which DCP substitutes
+  the allocated value into at launch time:
+
+  ```csharp
+  .WithHttpEndpoint(name: "http", env: "ASPNETCORE_HTTP_PORTS")
+  .WithHttpsEndpoint(name: "https", env: "ASPNETCORE_HTTPS_PORTS")
+  ```
+
+  The `env:` shortcut injects the **bare port number** for an `ExecutableResource` (project
+  resources get a fully-formed URL, executables don't) — which is exactly what
+  `ASPNETCORE_HTTP_PORTS`/`ASPNETCORE_HTTPS_PORTS` expect, and exactly what makes it unusable for
+  `ASPNETCORE_URLS`.
 - Don't invoke `<MSBuild Targets="Publish">` (the MSBuild task, not the CLI) against a project
   that's *also* reached via a `ProjectReference` in the same build graph — it deadlocks the
   MSBuild engine (observed: over an hour with zero output, no error). Use `<Exec Command="dotnet
