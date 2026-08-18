@@ -10,6 +10,15 @@ updates:
       github-actions:
         patterns:
           - "*"
+    ignore:
+      # The GitTools actions are pinned to a major deliberately: the workflow requests
+      # GitVersion via `versionSpec: '5.x'`, and GitVersion.yml is written against 5.x
+      # config (`mode: Mainline`). Moving to the next action major means migrating the
+      # tool and its config together, which is a deliberate change rather than something
+      # to accept from a grouped bump. Minor and patch updates still come through.
+      - dependency-name: "gittools/actions/*"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: "nuget"
     directory: "/"
