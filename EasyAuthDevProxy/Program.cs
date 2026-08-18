@@ -1,4 +1,5 @@
-﻿using EasyAuthDevProxy.Infrastructure;
+﻿using System.Net.Security;
+using EasyAuthDevProxy.Infrastructure;
 using Yarp.ReverseProxy.Transforms;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,8 +23,16 @@ builder.Services.AddReverseProxy()
     {
         if (useUnsafeHttpsForDevelopment)
         {
-            handler.SslOptions.RemoteCertificateValidationCallback = (_, _, _, errors) =>
-                errors == System.Net.Security.SslPolicyErrors.RemoteCertificateNameMismatch;
+            // Backends in local development serve the ASP.NET Core developer certificate, which
+            // fails validation in two different ways: the name doesn't match when the backend is
+            // reached through service discovery, and the certificate is often not trusted at all
+            // (on Linux `dotnet dev-certs https --trust` only partially succeeds). Tolerate both,
+            // but still require the backend to actually present a certificate.
+            const SslPolicyErrors developmentCertificateErrors =
+                SslPolicyErrors.RemoteCertificateNameMismatch | SslPolicyErrors.RemoteCertificateChainErrors;
+
+            handler.SslOptions.RemoteCertificateValidationCallback = (_, certificate, _, errors) =>
+                certificate is not null && (errors & ~developmentCertificateErrors) == 0;
         }
     })
     .AddTransforms(builderContext =>
