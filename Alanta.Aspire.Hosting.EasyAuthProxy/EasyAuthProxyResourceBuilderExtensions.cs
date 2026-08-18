@@ -57,16 +57,14 @@ public static class EasyAuthProxyResourceBuilderExtensions
         var resource = new EasyAuthProxyExecutableResource(name, "dotnet", workingDirectory);
         var resourceBuilder = builder.AddResource(resource)
             .WithArgs(proxyDllPath)
-            .WithHttpEndpoint(name: "http", targetPort: 8080)
-            .WithEnvironment(context =>
-            {
-                // Unlike project resources, plain executables don't get ASPNETCORE_URLS
-                // populated automatically from the endpoint - and WithHttpEndpoint's own
-                // `env:` shortcut only injects the bare port, which Kestrel rejects. Bind the
-                // full URL ourselves instead.
-                var endpoint = resource.GetEndpoint("http");
-                context.EnvironmentVariables["ASPNETCORE_URLS"] = $"http://+:{endpoint.TargetPort}";
-            })
+            // No hardcoded target port: this runs as a plain host process, so the target port is
+            // the literal OS port it binds, and pinning it makes the proxy collide with anything
+            // else already using it. Aspire allocates a free one and passes it in through
+            // ASP.NET Core's own ASPNETCORE_HTTP_PORTS variable - DCP substitutes the allocated
+            // value at launch time. (Don't switch this to a computed ASPNETCORE_URLS: the target
+            // port isn't known yet when environment callbacks run, and DCP needs the `env:`
+            // binding to know how to hand the port to the process.)
+            .WithHttpEndpoint(name: "http", env: "ASPNETCORE_HTTP_PORTS")
             .WithEnvironment("ASPNETCORE_ENVIRONMENT", builder.Environment.EnvironmentName)
             .WithOtlpExporter();
 

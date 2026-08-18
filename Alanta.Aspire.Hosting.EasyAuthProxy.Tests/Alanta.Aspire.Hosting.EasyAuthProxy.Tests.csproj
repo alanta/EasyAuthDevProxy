@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" />
+        <PackageReference Include="Shouldly" />
+        <PackageReference Include="xunit" />
+        <PackageReference Include="xunit.runner.visualstudio">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Alanta.Aspire.Hosting.EasyAuthProxy\Alanta.Aspire.Hosting.EasyAuthProxy.csproj" IsAspireProjectResource="false" />
+    </ItemGroup>
+
+    <!--
+      AddEasyAuthProxy() resolves the bundled proxy next to the hosting assembly, so these tests
+      need the same publish-output copy an in-repo AppHost consumer does - see AspireDemo.AppHost.csproj.
+    -->
+    <Target Name="CopyEasyAuthDevProxyOutput" AfterTargets="Build">
+      <ItemGroup>
+        <_ProxyFile Include="..\Alanta.Aspire.Hosting.EasyAuthProxy\bin\$(Configuration)\net10.0\proxy\**\*" />
+      </ItemGroup>
+      <Copy SourceFiles="@(_ProxyFile)" DestinationFolder="$(OutDir)proxy\%(RecursiveDir)" SkipUnchangedFiles="true" />
+    </Target>
+
+</Project>
