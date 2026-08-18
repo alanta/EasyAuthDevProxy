@@ -41,6 +41,52 @@ public static class EasyAuthProxyResourceBuilderExtensions
     }
 
     /// <summary>
+    /// Configures the host port that the proxy's HTTPS endpoint is exposed on instead of using a
+    /// randomly assigned port.
+    /// </summary>
+    /// <param name="builder">The resource builder for the EasyAuth proxy.</param>
+    /// <param name="port">The port to bind on the host. If <see langword="null"/> a random port will be assigned.</param>
+    public static IResourceBuilder<TResource> WithHttpsHostPort<TResource>(this IResourceBuilder<TResource> builder, int? port)
+        where TResource : IEasyAuthProxyResource
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        return builder.WithEndpoint("https", endpoint =>
+        {
+            endpoint.Port = port;
+        });
+    }
+
+    /// <summary>
+    /// Feeds whatever HTTPS certificate Aspire has associated with the resource into the proxy's
+    /// Kestrel configuration. Out of the box that is nothing at all, and the proxy falls back to
+    /// the ASP.NET Core developer certificate on its own; callers who want something else use the
+    /// standard <c>WithHttpsCertificate</c>/<c>WithHttpsDeveloperCertificate</c> extensions and
+    /// this callback wires the resulting key pair up.
+    /// </summary>
+    private static IResourceBuilder<TResource> WithKestrelHttpsCertificate<TResource>(this IResourceBuilder<TResource> builder)
+        where TResource : IEasyAuthProxyResource, IResourceWithArgs
+    {
+        // ASPIRECERTIFICATES001: the certificate configuration APIs are still marked experimental in
+        // Aspire 13.4. Suppressed here so consumers don't have to; note that calling
+        // WithHttpsCertificate/WithHttpsDeveloperCertificate from an AppHost trips the same
+        // diagnostic there until Aspire stabilises it.
+#pragma warning disable ASPIRECERTIFICATES001
+        return builder.WithHttpsCertificateConfiguration(context =>
+        {
+            context.EnvironmentVariables["Kestrel__Certificates__Default__Path"] = context.PfxPath;
+
+            if (context.Password is { } password)
+            {
+                context.EnvironmentVariables["Kestrel__Certificates__Default__Password"] = password;
+            }
+
+            return Task.CompletedTask;
+        });
+#pragma warning restore ASPIRECERTIFICATES001
+    }
+
+    /// <summary>
     /// Adds an EasyAuth development proxy resource running as a plain .NET process. This is the
     /// default and recommended way to add the proxy: it only requires a matching .NET runtime,
     /// not a container engine. The proxy binaries are bundled inside this package.
@@ -57,16 +103,16 @@ public static class EasyAuthProxyResourceBuilderExtensions
         var resource = new EasyAuthProxyExecutableResource(name, "dotnet", workingDirectory);
         var resourceBuilder = builder.AddResource(resource)
             .WithArgs(proxyDllPath)
-            .WithHttpEndpoint(name: "http", targetPort: 8080)
-            .WithEnvironment(context =>
-            {
-                // Unlike project resources, plain executables don't get ASPNETCORE_URLS
-                // populated automatically from the endpoint - and WithHttpEndpoint's own
-                // `env:` shortcut only injects the bare port, which Kestrel rejects. Bind the
-                // full URL ourselves instead.
-                var endpoint = resource.GetEndpoint("http");
-                context.EnvironmentVariables["ASPNETCORE_URLS"] = $"http://+:{endpoint.TargetPort}";
-            })
+            // No hardcoded target ports: this runs as a plain host process, so the target port is
+            // the literal OS port it binds, and pinning it makes the proxy collide with anything
+            // else already using it. Aspire allocates a free one and passes it in through
+            // ASP.NET Core's own ASPNETCORE_HTTP_PORTS/ASPNETCORE_HTTPS_PORTS variables - DCP
+            // substitutes the allocated value at launch time. (Don't switch this to a computed
+            // ASPNETCORE_URLS: the target port isn't known yet when environment callbacks run,
+            // and DCP needs the `env:` binding to know how to hand the port to the process.)
+            .WithHttpEndpoint(name: "http", env: "ASPNETCORE_HTTP_PORTS")
+            .WithHttpsEndpoint(name: "https", env: "ASPNETCORE_HTTPS_PORTS")
+            .WithKestrelHttpsCertificate()
             .WithEnvironment("ASPNETCORE_ENVIRONMENT", builder.Environment.EnvironmentName)
             .WithOtlpExporter();
 
@@ -85,11 +131,17 @@ public static class EasyAuthProxyResourceBuilderExtensions
     {
         var resource = new EasyAuthProxyContainerResource(name);
         var yarpBuilder = builder.AddResource(resource)
+            // Container-internal ports, remapped to free host ports by the container runtime -
+            // unlike the executable resource these can safely be pinned.
             .WithHttpEndpoint(name: "http", targetPort: 8080)
+            .WithHttpsEndpoint(name: "https", targetPort: 8081)
+            .WithKestrelHttpsCertificate()
             .WithImage("alanta/easyauthdevproxy")
             .WithImageRegistry("ghcr.io")
             .WithImageTag("latest")
             .WithEnvironment("ASPNETCORE_ENVIRONMENT", builder.Environment.EnvironmentName)
+            .WithEnvironment("ASPNETCORE_HTTP_PORTS", "8080")
+            .WithEnvironment("ASPNETCORE_HTTPS_PORTS", "8081")
             .WithContainerRuntimeArgs("--add-host=host.docker.internal:10.88.0.1")
             .WithEnvironment(ctx =>
             {
@@ -104,6 +156,14 @@ public static class EasyAuthProxyResourceBuilderExtensions
 
         if (builder.ExecutionContext.IsRunMode)
         {
+            // A container has no access to the developer certificate store, so - unlike the
+            // executable resource, where Kestrel picks the dev cert up by itself - it has to be
+            // handed in explicitly. A caller who wants a real certificate instead can override
+            // this with the standard WithHttpsCertificate(...) extension.
+#pragma warning disable ASPIRECERTIFICATES001
+            yarpBuilder.WithHttpsDeveloperCertificate();
+#pragma warning restore ASPIRECERTIFICATES001
+
             // YARP will not trust the cert used by Aspire otlp endpoint when running locally
             // The Aspire otlp endpoint uses the dev cert, only valid for localhost, but from the container
             // perspective, the url will be something like https://docker.host.internal, so it will NOT be valid.

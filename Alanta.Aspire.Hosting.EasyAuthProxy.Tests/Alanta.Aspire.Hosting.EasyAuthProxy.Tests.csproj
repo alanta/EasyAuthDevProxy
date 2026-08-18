@@ -10,12 +10,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="coverlet.collector">
-          <PrivateAssets>all</PrivateAssets>
-          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
-        <PackageReference Include="Microsoft.Extensions.ServiceDiscovery.Yarp" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" />
         <PackageReference Include="Shouldly" />
         <PackageReference Include="xunit" />
@@ -30,7 +24,18 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\EasyAuthDevProxy\EasyAuthDevProxy.csproj" />
+      <ProjectReference Include="..\Alanta.Aspire.Hosting.EasyAuthProxy\Alanta.Aspire.Hosting.EasyAuthProxy.csproj" IsAspireProjectResource="false" />
     </ItemGroup>
+
+    <!--
+      AddEasyAuthProxy() resolves the bundled proxy next to the hosting assembly, so these tests
+      need the same publish-output copy an in-repo AppHost consumer does - see AspireDemo.AppHost.csproj.
+    -->
+    <Target Name="CopyEasyAuthDevProxyOutput" AfterTargets="Build">
+      <ItemGroup>
+        <_ProxyFile Include="..\Alanta.Aspire.Hosting.EasyAuthProxy\bin\$(Configuration)\net10.0\proxy\**\*" />
+      </ItemGroup>
+      <Copy SourceFiles="@(_ProxyFile)" DestinationFolder="$(OutDir)proxy\%(RecursiveDir)" SkipUnchangedFiles="true" />
+    </Target>
 
 </Project>

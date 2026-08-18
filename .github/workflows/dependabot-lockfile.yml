@@ -1,0 +1,56 @@
+name: Dependabot lockfile fix-up
+
+# Lock files are enabled repo-wide (RestorePackagesWithLockFile), and versions live in
+# Directory.Packages.props under Central Package Management. Dependabot only edits that
+# props file - it never regenerates the resolved versions recorded in each project's
+# packages.lock.json - so the `--locked-mode` restore in Build, Test, and Publish fails
+# with NU1004 on the PR. This workflow regenerates the lock files on the PR branch and
+# pushes the fix so the normal build can pass.
+#
+# Pushing with the default GITHUB_TOKEN would not retrigger the build workflow, so this
+# uses a PAT (secrets.DEPENDABOT_LOCKFILE_PAT) with repo contents:write instead. Note
+# that Dependabot-triggered runs read from the Dependabot secret store, not the Actions
+# one, so the PAT has to be registered there.
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependabot-lockfile-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  fix-lockfiles:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      with:
+        ref: ${{ github.event.pull_request.head.ref }}
+        token: ${{ secrets.DEPENDABOT_LOCKFILE_PAT }}
+
+    - name: Set up .NET
+      uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Regenerate lock files
+      run: dotnet restore EasyAuthDevProxy.slnx --force-evaluate
+
+    - name: Commit and push if lock files changed
+      run: |
+        if git diff --quiet -- '**/packages.lock.json'; then
+          echo "Lock files already up to date, nothing to push."
+          exit 0
+        fi
+
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add -- '**/packages.lock.json'
+        git commit -m "chore: regenerate NuGet lock files"
+        git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

@@ -8,7 +8,8 @@ Guidance for agents working in this repo. Project overview and usage docs live i
 | Path | What it is |
 |---|---|
 | `EasyAuthDevProxy/` | The proxy itself: ASP.NET Core + YARP reverse proxy, simulates Azure Container Apps EasyAuth for local dev. |
-| `EasyAuthDevProxy.Tests/` | xUnit tests for the proxy (`Microsoft.AspNetCore.Mvc.Testing`, FluentAssertions). |
+| `EasyAuthDevProxy.Tests/` | xUnit tests for the proxy (`Microsoft.AspNetCore.Mvc.Testing`, Shouldly). |
+| `Alanta.Aspire.Hosting.EasyAuthProxy.Tests/` | xUnit tests for the hosting integration. Application-model only — they build the model in memory and assert on annotations, no DCP, containers or dashboard. |
 | `Alanta.Aspire.Hosting.EasyAuthProxy/` | The Aspire hosting integration (`AddEasyAuthProxy()` / `AddEasyAuthProxyContainer()`). Published as the `Alanta.Aspire.Hosting.EasyAuthProxy` NuGet package — the project/folder/assembly all share this name; only the C# namespace stays `Aspire.Hosting` (via an explicit `RootNamespace`), so the extension methods are discoverable without an extra `using`. See [docs/aspire-hosting-packaging.md](docs/aspire-hosting-packaging.md) for how it bundles and ships the proxy. |
 | `AspireDemo/` | A working Aspire sample (`AppHost` + `App` + `ServiceDefaults`) exercising the hosting integration end-to-end. Use this to manually verify changes to `Alanta.Aspire.Hosting.EasyAuthProxy` — see below. |
 | `DemoApp/` | An older, minimal demo project. Not part of the Aspire sample; check before assuming it's exercised by anything. |
@@ -75,6 +76,20 @@ push --tags` on `main`.
   `AddEasyAuthProxyContainer()` is the explicit opt-in for container-based execution. Don't assume
   older docs/commits describing "the container resource" as the default are still accurate — check
   [docs/aspire-hosting-packaging.md](docs/aspire-hosting-packaging.md) for why and how this works.
+- **Never pin `targetPort` on the executable proxy resource's endpoints.** For a plain process the
+  target port *is* the OS port Kestrel binds, so a hardcoded value collides with whatever else on
+  the machine happens to hold it (issue #11), and `WithHostPort` only changes the externally
+  advertised port. Aspire has to allocate it, and DCP needs an `env:` binding
+  (`ASPNETCORE_HTTP_PORTS` / `ASPNETCORE_HTTPS_PORTS`) to pass the allocated value in - computing
+  `ASPNETCORE_URLS` in an environment callback does *not* work, because the target port is still
+  null when those callbacks run and DCP then refuses to create the endpoint at all. The container
+  resource is the opposite case: its target ports are container-internal and safe to pin.
+- **Resolve environment variables in tests with `DistributedApplicationOperation.Publish`, never
+  `Run`.** In run mode the value providers wait for endpoints DCP would have allocated, which
+  never happens in a unit test, so the call blocks forever rather than failing — a whole test run
+  hangs with no output. `ResourceEnvironment.ResolveEnvironmentAsync` in the hosting tests wraps
+  the publish-mode call; endpoint-derived values come back as placeholders like
+  `{easyauth.bindings.http.targetPort}`, which is exactly what those tests assert on.
 - `EasyAuthDevProxy.csproj` is deliberately **framework-dependent, no `RuntimeIdentifiers`** for
   normal builds — RID-specific settings (`ContainerRuntimeIdentifier`) only apply to the separate
   container-image publish target. Don't reintroduce a `RuntimeIdentifiers` list "to be safe"; it

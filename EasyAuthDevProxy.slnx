@@ -5,6 +5,7 @@
     <Project Path="AspireDemo/AspireDemo.ServiceDefaults/AspireDemo.ServiceDefaults.csproj" />
   </Folder>
   <Project Path="Alanta.Aspire.Hosting.EasyAuthProxy/Alanta.Aspire.Hosting.EasyAuthProxy.csproj" />
+  <Project Path="Alanta.Aspire.Hosting.EasyAuthProxy.Tests/Alanta.Aspire.Hosting.EasyAuthProxy.Tests.csproj" />
   <Project Path="DemoApp/DemoApp.csproj" />
   <Project Path="EasyAuthDevProxy.Tests/EasyAuthDevProxy.Tests.csproj" />
   <Project Path="EasyAuthDevProxy/EasyAuthDevProxy.csproj" />

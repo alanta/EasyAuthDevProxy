@@ -47,7 +47,67 @@ Configures the proxy to forward requests to the specified backend service using 
 Works with both `AddEasyAuthProxy` and `AddEasyAuthProxyContainer`.
 
 #### `WithHostPort<TResource>(int? port)`
-Configures the host port for the proxy. Works with both `AddEasyAuthProxy` and `AddEasyAuthProxyContainer`.
+Configures the host port for the proxy's HTTP endpoint. Works with both `AddEasyAuthProxy` and
+`AddEasyAuthProxyContainer`. Leave it unset and Aspire assigns a free port.
+
+#### `WithHttpsHostPort<TResource>(int? port)`
+Same, for the proxy's HTTPS endpoint.
+
+### HTTPS
+
+Both variants expose an `https` endpoint next to the `http` one, so a backend that only makes sense
+over TLS (secure cookies, HSTS, `RequireHttpsMetadata`) can be reached the same way it would be in
+Container Apps:
+
+```csharp
+var easyAuthProxy = builder.AddEasyAuthProxy("easyauth")
+    .WithBackend(catalogService)
+    .WithHostPort(8888)
+    .WithHttpsHostPort(8889);
+```
+
+By default the proxy serves the **ASP.NET Core developer certificate**, so make sure it's trusted:
+
+```shell
+dotnet dev-certs https --trust
+```
+
+To serve a certificate of your own, use Aspire's standard certificate extensions - the proxy picks
+up whatever they configure and passes it to Kestrel:
+
+```csharp
+var certPassword = builder.AddParameter("cert-password", secret: true);
+var certificate = X509CertificateLoader.LoadPkcs12FromFile("certs/easyauth.pfx", "...");
+
+var easyAuthProxy = builder.AddEasyAuthProxy("easyauth")
+    .WithBackend(catalogService)
+    .WithHttpsCertificate(certificate, certPassword);
+```
+
+> ℹ️ `WithHttpsCertificate` / `WithHttpsDeveloperCertificate` are still marked experimental in
+> Aspire 13.4, so calling them from your AppHost needs
+> `#pragma warning disable ASPIRECERTIFICATES001` (or `<NoWarn>ASPIRECERTIFICATES001</NoWarn>`).
+> Nothing extra is needed if you stick with the default developer certificate.
+
+### Backends over HTTPS
+
+When your backend serves HTTPS the proxy has to validate its certificate, and the developer
+certificate usually fails that: the name doesn't match once the backend is reached through service
+discovery, and on Linux `dotnet dev-certs https --trust` only partially succeeds, so the chain
+isn't trusted either. The proxy therefore accepts any certificate the backend presents when
+`ASPNETCORE_ENVIRONMENT` is `Development` - it logs a warning at startup saying so.
+
+This means the backend is **not** authenticated. That's the right trade for local development, but
+if you're pointing the proxy at something you don't fully control, turn it off and make sure the
+backend serves a certificate that validates:
+
+```csharp
+var easyAuthProxy = builder.AddEasyAuthProxy("easyauth")
+    .WithBackend(catalogService)
+    .WithEnvironment("EasyAuth__AllowUntrustedBackendCertificate", "false");
+```
+
+Outside `Development` the setting defaults to `false` and has to be switched on deliberately.
 
 ## How it Works
 
@@ -59,7 +119,7 @@ Configures the host port for the proxy. Works with both `AddEasyAuthProxy` and `
 ## Requirements
 
 - .NET 10.0 runtime (for `AddEasyAuthProxy`) - already true for anyone running an Aspire AppHost
-- Aspire 9.4.0+
+- Aspire 13.4.0+
 - Docker or Podman, only if you opt into `AddEasyAuthProxyContainer`
 
 ## Third-party notices
