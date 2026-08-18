@@ -1,4 +1,4 @@
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.ServiceDiscovery;
@@ -39,8 +39,8 @@ public class When_applying_backend_configuration  : IClassFixture<EasyAuthDevPro
             , CancellationToken.None);
 
         // Assert
-        result.Destinations.Should().HaveCount(1);
-        result.Destinations.First().Value.Address.Should().Be(expectedUrl, because);
+        result.Destinations.Count.ShouldBe(1);
+        result.Destinations.First().Value.Address.ShouldBe(expectedUrl, because);
     }
 }
 
