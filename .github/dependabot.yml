@@ -4,3 +4,19 @@ updates:
     directory: "/"
     schedule:
       interval: "quarterly"
+
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      # Split by update type so a major bump - notably Aspire.Hosting, whose certificate
+      # APIs this package calls while they're still marked experimental - arrives as its
+      # own reviewable PR instead of buried among routine minor/patch updates.
+      nuget-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+      nuget-major:
+        update-types:
+          - "major"
