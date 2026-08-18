@@ -22,8 +22,11 @@ public class When_adding_the_proxy
         }
     }
 
-    [Fact]
-    public async Task It_should_hand_the_allocated_port_to_the_process_through_an_environment_variable()
+    [Theory,
+     InlineData("http", "ASPNETCORE_HTTP_PORTS"),
+     InlineData("https", "ASPNETCORE_HTTPS_PORTS")]
+    public async Task It_should_hand_the_allocated_port_to_the_process_through_an_environment_variable(
+        string endpointName, string expectedVariable)
     {
         var builder = DistributedApplication.CreateBuilder();
 
@@ -34,7 +37,7 @@ public class When_adding_the_proxy
         // endpoint at all ("information about the port to expose the service is missing").
         var environment = await proxy.ResolveEnvironmentAsync();
 
-        environment["ASPNETCORE_HTTP_PORTS"].ShouldBe("{easyauth.bindings.http.targetPort}");
+        environment[expectedVariable].ShouldBe($"{{easyauth.bindings.{endpointName}.targetPort}}");
     }
 
     [Fact]
@@ -52,16 +55,29 @@ public class When_adding_the_proxy
     }
 
     [Fact]
+    public void It_should_expose_both_an_http_and_an_https_endpoint()
+    {
+        var builder = DistributedApplication.CreateBuilder();
+
+        var proxy = builder.AddEasyAuthProxy("easyauth");
+
+        proxy.Resource.Annotations.OfType<EndpointAnnotation>()
+            .Select(e => e.Name)
+            .ShouldBe(new[] { "http", "https" }, ignoreOrder: true);
+    }
+
+    [Fact]
     public void It_should_pin_the_container_target_ports()
     {
         var builder = DistributedApplication.CreateBuilder();
 
         var proxy = builder.AddEasyAuthProxyContainer("easyauth");
 
-        // The opposite of the executable case: this is a container-internal port, remapped to a
-        // free host port by the container runtime, so pinning it is safe.
+        // The opposite of the executable case: these are container-internal ports, remapped to
+        // free host ports by the container runtime, so pinning them is safe.
         var endpoints = proxy.Resource.Annotations.OfType<EndpointAnnotation>().ToDictionary(e => e.Name);
 
         endpoints["http"].TargetPort.ShouldBe(8080);
+        endpoints["https"].TargetPort.ShouldBe(8081);
     }
 }

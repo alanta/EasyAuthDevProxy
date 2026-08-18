@@ -76,11 +76,11 @@ push --tags` on `main`.
   `AddEasyAuthProxyContainer()` is the explicit opt-in for container-based execution. Don't assume
   older docs/commits describing "the container resource" as the default are still accurate — check
   [docs/aspire-hosting-packaging.md](docs/aspire-hosting-packaging.md) for why and how this works.
-- **Never pin `targetPort` on the executable proxy resource's endpoint.** For a plain process the
+- **Never pin `targetPort` on the executable proxy resource's endpoints.** For a plain process the
   target port *is* the OS port Kestrel binds, so a hardcoded value collides with whatever else on
   the machine happens to hold it (issue #11), and `WithHostPort` only changes the externally
   advertised port. Aspire has to allocate it, and DCP needs an `env:` binding
-  (`ASPNETCORE_HTTP_PORTS`) to pass the allocated value in - computing
+  (`ASPNETCORE_HTTP_PORTS` / `ASPNETCORE_HTTPS_PORTS`) to pass the allocated value in - computing
   `ASPNETCORE_URLS` in an environment callback does *not* work, because the target port is still
   null when those callbacks run and DCP then refuses to create the endpoint at all. The container
   resource is the opposite case: its target ports are container-internal and safe to pin.

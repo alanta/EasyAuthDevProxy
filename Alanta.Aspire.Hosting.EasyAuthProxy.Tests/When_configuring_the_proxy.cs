@@ -20,6 +20,19 @@ public class When_configuring_the_proxy
     }
 
     [Fact]
+    public void WithHttpsHostPort_should_change_the_advertised_https_port_only()
+    {
+        var builder = DistributedApplication.CreateBuilder();
+
+        var proxy = builder.AddEasyAuthProxy("easyauth").WithHttpsHostPort(8889);
+
+        var https = proxy.Resource.Annotations.OfType<EndpointAnnotation>().Single(e => e.Name == "https");
+
+        https.Port.ShouldBe(8889);
+        https.TargetPort.ShouldBeNull();
+    }
+
+    [Fact]
     public async Task WithBackend_should_point_the_proxy_at_the_backend_through_service_discovery()
     {
         var builder = DistributedApplication.CreateBuilder();
