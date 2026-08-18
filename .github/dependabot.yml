@@ -4,6 +4,12 @@ updates:
     directory: "/"
     schedule:
       interval: "quarterly"
+    groups:
+      # One PR per run rather than one per action - these bumps are routine and
+      # reviewing them together is no harder than reviewing them separately.
+      github-actions:
+        patterns:
+          - "*"
 
   - package-ecosystem: "nuget"
     directory: "/"
