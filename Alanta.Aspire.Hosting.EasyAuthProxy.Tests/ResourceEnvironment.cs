@@ -22,7 +22,7 @@ internal static class ResourceEnvironment
         var executionContext = new DistributedApplicationExecutionContext(
             new DistributedApplicationExecutionContextOptions(DistributedApplicationOperation.Publish)
             {
-                ServiceProvider = resource.ApplicationBuilder.Services.BuildServiceProvider()
+                Services = resource.ApplicationBuilder.Services.BuildServiceProvider()
             });
 
         var configuration = await ExecutionConfigurationBuilder.Create(resource.Resource)
