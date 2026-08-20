@@ -68,7 +68,7 @@ public static class EasyAuthProxyResourceBuilderExtensions
         where TResource : IEasyAuthProxyResource, IResourceWithArgs
     {
         // ASPIRECERTIFICATES001: the certificate configuration APIs are still marked experimental in
-        // Aspire 13.4. Suppressed here so consumers don't have to; note that calling
+        // Aspire 13.5. Suppressed here so consumers don't have to; note that calling
         // WithHttpsCertificate/WithHttpsDeveloperCertificate from an AppHost trips the same
         // diagnostic there until Aspire stabilises it.
 #pragma warning disable ASPIRECERTIFICATES001

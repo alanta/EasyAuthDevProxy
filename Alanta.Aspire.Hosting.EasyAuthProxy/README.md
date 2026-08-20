@@ -85,7 +85,7 @@ var easyAuthProxy = builder.AddEasyAuthProxy("easyauth")
 ```
 
 > ℹ️ `WithHttpsCertificate` / `WithHttpsDeveloperCertificate` are still marked experimental in
-> Aspire 13.4, so calling them from your AppHost needs
+> Aspire 13.5, so calling them from your AppHost needs
 > `#pragma warning disable ASPIRECERTIFICATES001` (or `<NoWarn>ASPIRECERTIFICATES001</NoWarn>`).
 > Nothing extra is needed if you stick with the default developer certificate.
 
@@ -119,7 +119,7 @@ Outside `Development` the setting defaults to `false` and has to be switched on 
 ## Requirements
 
 - .NET 10.0 runtime (for `AddEasyAuthProxy`) - already true for anyone running an Aspire AppHost
-- Aspire 13.4.0+
+- Aspire 13.5.0+
 - Docker or Podman, only if you opt into `AddEasyAuthProxyContainer`
 
 ## Third-party notices

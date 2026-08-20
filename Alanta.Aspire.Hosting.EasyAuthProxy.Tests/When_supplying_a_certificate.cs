@@ -4,7 +4,7 @@ using Shouldly;
 
 namespace Alanta.Aspire.Hosting.EasyAuthProxy.Tests;
 
-// ASPIRECERTIFICATES001: the certificate configuration APIs are still experimental in Aspire 13.4.
+// ASPIRECERTIFICATES001: the certificate configuration APIs are still experimental in Aspire 13.5.
 #pragma warning disable ASPIRECERTIFICATES001
 
 public class When_supplying_a_certificate
@@ -69,6 +69,7 @@ public class When_supplying_a_certificate
             EnvironmentVariables = [],
             CertificatePath = ReferenceExpression.Create($"/certs/easyauth.crt"),
             KeyPath = ReferenceExpression.Create($"/certs/easyauth.key"),
+            CertificateWithKeyPath = ReferenceExpression.Create($"/certs/easyauth.pem"),
             PfxPath = ReferenceExpression.Create($"/certs/easyauth.pfx"),
             Password = password is null ? null : ReferenceExpression.Create($"{password}"),
             CancellationToken = CancellationToken.None
