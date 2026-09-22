@@ -765,7 +765,7 @@
       },
       "OpenTelemetry.Extensions.Hosting": {
         "type": "CentralTransitive",
-        "requested": "[1.17.0, )",
+        "requested": "[1.19.1, )",
         "resolved": "1.19.1",
         "contentHash": "3qqZfVmW8mKA2/fRwI83o8z+yZd33KbEqRlXrlX0+3e/U7i+z0MQiCr0L3Axxa0jGdiylIrpWX4DIT9nAbJ00A==",
         "dependencies": {
